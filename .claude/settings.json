@@ -12,6 +12,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/update-docs.sh",
+            "timeout": 180,
+            "statusMessage": "Updating project documentation..."
+          }
+        ]
+      }
     ]
   }
 }
