@@ -13,6 +13,13 @@ A terminal dashboard for monitoring running Claude Code instances — like [k9s]
 - **Session detail** — drill into any session to see full metadata
 - **Kill sessions** — terminate idle or stuck sessions with confirmation
 - **Filter** — search by directory, status, or last action
+- **Column sorting** — sort by any column with ascending/descending toggle
+- **Log tail view** — stream conversation logs with follow mode and thinking toggle
+- **Cost estimation** — per-session USD cost based on token usage (color-coded)
+- **Turn counter** — track conversation turns per session
+- **Desktop notifications** — get notified when a session completes (macOS)
+- **Copy to clipboard** — quickly copy a session's working directory
+- **Aggregate stats** — total CPU, memory, and session counts in the footer
 - **Adaptive colors** — works in both light and dark terminal themes
 - **Multiple output modes** — TUI (default), static table, or JSON
 
@@ -44,11 +51,39 @@ export PATH="$HOME/.claude/bin:$PATH"
 > **Current version:** <!-- x-release-please-version -->1.3.0<!-- x-release-please-version-end --> — see [changelog](CHANGELOG.md) for details.
 
 <details>
+<summary>Alternative: install with mise</summary>
+
+Install globally with [mise](https://mise.jdx.dev/) (downloads the binary from GitHub Releases):
+
+```bash
+mise use -g ubi:morganBlanloeil/c9e
+```
+
+The binary is automatically added to your PATH by mise.
+
+</details>
+
+<details>
 <summary>Alternative: install with go</summary>
 
 ```bash
 go install github.com/morganBlanloeil/c9e/cmd/c9e@latest
 ```
+
+</details>
+
+<details>
+<summary>Alternative: build from source</summary>
+
+Requires [mise](https://mise.jdx.dev/) and Go 1.26+:
+
+```bash
+git clone https://github.com/morganBlanloeil/c9e.git
+cd c9e
+mise run install
+```
+
+This builds the binary and installs it to `~/.claude/bin/c9e`.
 
 </details>
 
@@ -72,28 +107,57 @@ If stdout is not a TTY (e.g., piped), the dashboard automatically falls back to 
 
 ## TUI keyboard shortcuts
 
+### List view
+
 | Key | Action |
 |-----|--------|
 | `j` / `k` or `↑` / `↓` | Navigate sessions |
 | `enter` | Drill into session detail |
-| `esc` / `q` | Back / quit |
+| `esc` / `q` | Clear filter / quit |
 | `d` | Kill selected session (with confirmation) |
 | `/` | Filter by directory, status, or action |
 | `g` / `G` | Jump to first / last |
+| `s` | Cycle sort column (PID, STATUS, CPU%, MEM%, UPTIME, IDLE, DIR, ACTION, TURNS) |
+| `S` | Toggle sort direction (ascending / descending) |
+| `c` | Copy selected session's working directory to clipboard |
+| `l` | Open log tail view for selected session |
+| `n` | Toggle desktop notifications on/off |
 | `ctrl+c` | Force quit |
+
+### Log tail view
+
+| Key | Action |
+|-----|--------|
+| `j` / `k` or `↑` / `↓` | Scroll up / down |
+| `g` / `G` | Jump to top / bottom |
+| `f` | Toggle follow mode (auto-scroll like `tail -f`) |
+| `t` | Toggle thinking blocks (show/hide Claude's internal reasoning) |
+| `esc` / `q` | Back to previous view |
 
 ## Columns
 
 | Column | Description |
 |--------|-------------|
 | PID | Process ID of the Claude Code instance |
-| STATUS | `ACTIVE` (< 5min idle), `IDLE` (> 5min), `DEAD` (process gone) |
+| STATUS | Session status (see below) |
+| TURNS | Number of conversation turns (user messages) |
 | CPU% | Current CPU usage |
 | MEM% | Current memory usage |
+| COST | Estimated session cost in USD (color-coded: green < $0.10, yellow < $1, red >= $1) |
 | UPTIME | Time since the instance was started |
 | IDLE | Time since the last user message |
 | DIRECTORY | Working directory of the instance |
 | LAST ACTION | Last user message sent in the session |
+
+## Status types
+
+| Status | Icon | Meaning |
+|--------|------|---------|
+| ACTIVE | `●` | Interaction within the last 5 minutes |
+| WAITING | `◇` | Claude has responded, awaiting user input |
+| IDLE | `◐` | No interaction for more than 5 minutes |
+| DEAD | `○` | Session file exists but process is gone |
+| DONE | `★` | Task recently completed (30-second highlight) |
 
 ## Data sources
 
@@ -103,7 +167,10 @@ The dashboard reads from Claude Code's local state files:
 |--------|------|
 | `~/.claude/sessions/*.json` | Session metadata (PID, working directory, start time) |
 | `~/.claude/history.jsonl` | User action log (last message per session) |
+| `~/.claude/projects/{slug}/{sessionID}.jsonl` | Full conversation logs (turns, cost, log tail) |
 | `ps aux` | Live process stats (CPU, memory, alive check) |
+
+> **Note:** These are undocumented Claude Code internal files and may change between versions.
 
 ## Development
 
