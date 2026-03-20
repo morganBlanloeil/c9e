@@ -25,9 +25,10 @@ var (
 			Padding(0, 1)
 
 	// Status summary
-	activeCountStyle = lipgloss.NewStyle().Foreground(green).Bold(true)
-	idleCountStyle   = lipgloss.NewStyle().Foreground(yellow).Bold(true)
-	deadCountStyle   = lipgloss.NewStyle().Foreground(red).Bold(true)
+	activeCountStyle  = lipgloss.NewStyle().Foreground(green).Bold(true)
+	waitingCountStyle = lipgloss.NewStyle().Foreground(cyan).Bold(true)
+	idleCountStyle    = lipgloss.NewStyle().Foreground(yellow).Bold(true)
+	deadCountStyle    = lipgloss.NewStyle().Foreground(red).Bold(true)
 
 	// Table header
 	headerStyle = lipgloss.NewStyle().
@@ -42,10 +43,11 @@ var (
 	normalRowStyle = lipgloss.NewStyle()
 
 	// Status badges
-	activeBadge = lipgloss.NewStyle().Foreground(green).Bold(true)
-	idleBadge   = lipgloss.NewStyle().Foreground(yellow).Bold(true)
-	deadBadge   = lipgloss.NewStyle().Foreground(red).Bold(true)
-	doneBadge   = lipgloss.NewStyle().Foreground(doneColor).Bold(true).Blink(true)
+	activeBadge  = lipgloss.NewStyle().Foreground(green).Bold(true)
+	waitingBadge = lipgloss.NewStyle().Foreground(cyan).Bold(true)
+	idleBadge    = lipgloss.NewStyle().Foreground(yellow).Bold(true)
+	deadBadge    = lipgloss.NewStyle().Foreground(red).Bold(true)
+	doneBadge    = lipgloss.NewStyle().Foreground(doneColor).Bold(true).Blink(true)
 
 	// Done summary count
 	doneCountStyle = lipgloss.NewStyle().Foreground(doneColor).Bold(true)

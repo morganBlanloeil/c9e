@@ -105,6 +105,54 @@ func ReadFrom(path string, offset int64) ([]LogEntry, int64, error) {
 	return entries, info.Size(), nil
 }
 
+// LastRole returns the role ("user" or "assistant") of the last message in a
+// session JSONL file. It reads only the tail of the file for performance.
+// Returns empty string if the file cannot be read or has no valid entries.
+func LastRole(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return ""
+	}
+
+	// Read last 64KB — enough to find the last message
+	const tailSize = 64 * 1024
+	if info.Size() > tailSize {
+		if _, err := f.Seek(-tailSize, io.SeekEnd); err != nil {
+			return ""
+		}
+		// Skip partial first line
+		reader := bufio.NewReader(f)
+		_, _ = reader.ReadString('\n')
+		return scanLastRole(reader)
+	}
+
+	return scanLastRole(bufio.NewReader(f))
+}
+
+// scanLastRole reads JSONL lines and returns the "type" field of the last
+// user or assistant message.
+func scanLastRole(r io.Reader) string {
+	var lastRole string
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, 512*1024), 512*1024)
+	for scanner.Scan() {
+		var line jsonLine
+		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
+			continue
+		}
+		if line.Type == "user" || line.Type == "assistant" {
+			lastRole = line.Type
+		}
+	}
+	return lastRole
+}
+
 func scanEntries(r io.Reader) []LogEntry {
 	var entries []LogEntry
 	scanner := bufio.NewScanner(r)

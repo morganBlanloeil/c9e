@@ -53,19 +53,21 @@ func fetchRows() ([]display.Row, error) {
 			}
 		}
 
+		logPath := logs.ResolvePath(s.SessionID, s.Cwd)
+
 		status := display.StatusActive
 		if !alive {
 			status = display.StatusDead
 		} else if idleSec > int64(display.IdleThreshold.Seconds()) {
 			status = display.StatusIdle
+		} else if logPath != "" && logs.LastRole(logPath) == "assistant" {
+			status = display.StatusWaiting
 		}
 
 		sid := s.SessionID
 		if len(sid) > 8 {
 			sid = sid[:8]
 		}
-
-		logPath := logs.ResolvePath(s.SessionID, s.Cwd)
 
 		rows = append(rows, display.Row{
 			PID:           s.PID,

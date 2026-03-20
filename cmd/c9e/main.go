@@ -11,6 +11,7 @@ import (
 
 	"github.com/wescale/claude-dashboard/internal/display"
 	"github.com/wescale/claude-dashboard/internal/history"
+	"github.com/wescale/claude-dashboard/internal/logs"
 	"github.com/wescale/claude-dashboard/internal/process"
 	"github.com/wescale/claude-dashboard/internal/session"
 	"github.com/wescale/claude-dashboard/internal/tui"
@@ -157,11 +158,15 @@ func runStatic(jsonOutput bool) error {
 			}
 		}
 
+		logPath := logs.ResolvePath(s.SessionID, s.Cwd)
+
 		status := display.StatusActive
 		if !alive {
 			status = display.StatusDead
 		} else if idleSec > int64(display.IdleThreshold.Seconds()) {
 			status = display.StatusIdle
+		} else if logPath != "" && logs.LastRole(logPath) == "assistant" {
+			status = display.StatusWaiting
 		}
 
 		rows = append(rows, display.Row{
