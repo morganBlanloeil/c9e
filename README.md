@@ -44,15 +44,9 @@ export PATH="$HOME/.claude/bin:$PATH"
 > **Current version:** <!-- x-release-please-version -->1.2.0<!-- x-release-please-version-end --> — see [changelog](CHANGELOG.md) for details.
 
 <details>
-<summary>Build from source</summary>
+<summary>Alternative: install with go</summary>
 
 ```bash
-# With mise
-git clone https://github.com/morganBlanloeil/c9e.git
-cd c9e
-mise run install   # builds and copies to ~/.claude/bin/
-
-# Or with go install
 go install github.com/morganBlanloeil/c9e/cmd/c9e@latest
 ```
 
