@@ -1,2 +1,5 @@
 dist/
 /c9e
+.claude/logs/
+.claude/.last-doc-update
+.claude/.skip-doc-update
