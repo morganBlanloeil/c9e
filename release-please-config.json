@@ -2,6 +2,13 @@
   "packages": {
     ".": {
       "release-type": "go",
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "ci", "section": "CI" },
+        { "type": "docs", "section": "Documentation" },
+        { "type": "chore", "section": "Miscellaneous" }
+      ],
       "extra-files": [
         {
           "type": "generic",
