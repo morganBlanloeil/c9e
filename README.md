@@ -1,4 +1,4 @@
-# claude-dashboard
+# c9e
 
 A terminal dashboard for monitoring running Claude Code instances — like [k9s](https://k9scli.io/) but for Claude Code.
 
@@ -29,7 +29,7 @@ cd claude-dashboard
 mise run install
 ```
 
-The binary is installed to `~/.claude/bin/claude-dashboard`.
+The binary is installed to `~/.claude/bin/c9e`.
 
 Make sure `~/.claude/bin` is in your PATH:
 
@@ -41,23 +41,23 @@ export PATH="$HOME/.claude/bin:$PATH"
 ### From source (go install)
 
 ```bash
-go install github.com/wescale/claude-dashboard/cmd/claude-dashboard@latest
+go install github.com/wescale/claude-dashboard/cmd/c9e@latest
 ```
 
 ## Usage
 
 ```bash
 # Interactive TUI (default)
-claude-dashboard
+c9e
 
 # Static table output (one-shot)
-claude-dashboard --table
+c9e --table
 
 # JSON output (for scripting)
-claude-dashboard --json
+c9e --json
 
 # Pipe to jq — find sessions idle for 10+ minutes
-claude-dashboard --json | jq '.[] | select(.alive and .idle_s > 600)'
+c9e --json | jq '.[] | select(.alive and .idle_s > 600)'
 ```
 
 If stdout is not a TTY (e.g., piped), the dashboard automatically falls back to table mode.
