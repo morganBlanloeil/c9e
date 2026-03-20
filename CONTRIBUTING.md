@@ -170,11 +170,10 @@ The `sessionId` is the join key between session files and history. The `pid` is 
 
 ## Releasing
 
-Tag a version and rebuild:
+Releases are automated via [release-please](https://github.com/googleapis/release-please). On merge to `main`:
 
-```bash
-git tag v0.1.0
-mise run install
-c9e --version
-# c9e v0.1.0
-```
+1. Release-please creates/updates a release PR with changelog based on conventional commits
+2. Merging the release PR creates a GitHub Release with tag
+3. The CI automatically builds binaries for all platforms and attaches them to the release
+
+Binaries are available at: <https://github.com/morganBlanloeil/c9e/releases>
