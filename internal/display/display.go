@@ -31,9 +31,10 @@ func CleanAction(s string) string {
 type Status string
 
 const (
-	StatusActive Status = "ACTIVE"
-	StatusIdle   Status = "IDLE"
-	StatusDead   Status = "DEAD"
+	StatusActive  Status = "ACTIVE"
+	StatusWaiting Status = "WAITING"
+	StatusIdle    Status = "IDLE"
+	StatusDead    Status = "DEAD"
 )
 
 // IdleThreshold is the duration after which a session is considered idle.
@@ -129,6 +130,8 @@ func colorFor(s Status) string {
 	switch s {
 	case StatusActive:
 		return ansiGreen
+	case StatusWaiting:
+		return ansiCyan
 	case StatusIdle:
 		return ansiYellow
 	case StatusDead:
@@ -142,6 +145,8 @@ func iconFor(s Status) string {
 	switch s {
 	case StatusActive:
 		return "●"
+	case StatusWaiting:
+		return "◇"
 	case StatusIdle:
 		return "◐"
 	case StatusDead:

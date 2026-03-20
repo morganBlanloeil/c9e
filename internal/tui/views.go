@@ -27,11 +27,13 @@ func (m Model) viewList() string {
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Summary counts
-	active, idle, dead := 0, 0, 0
+	active, waiting, idle, dead := 0, 0, 0, 0
 	for _, r := range m.rows {
 		switch r.Status {
 		case display.StatusActive:
 			active++
+		case display.StatusWaiting:
+			waiting++
 		case display.StatusIdle:
 			idle++
 		case display.StatusDead:
@@ -45,6 +47,9 @@ func (m Model) viewList() string {
 		}
 	}
 	summary := "  " + activeCountStyle.Render(fmt.Sprintf("● %d active", active))
+	if waiting > 0 {
+		summary += "  " + waitingCountStyle.Render(fmt.Sprintf("◇ %d waiting", waiting))
+	}
 	if idle > 0 {
 		summary += "  " + idleCountStyle.Render(fmt.Sprintf("◐ %d idle", idle))
 	}
@@ -194,6 +199,8 @@ func statusIcon(s display.Status) string {
 	switch s {
 	case display.StatusActive:
 		return activeBadge.Render("●")
+	case display.StatusWaiting:
+		return waitingBadge.Render("◇")
 	case display.StatusIdle:
 		return idleBadge.Render("◐")
 	case display.StatusDead:
@@ -208,6 +215,8 @@ func statusText(s display.Status) string {
 	switch s {
 	case display.StatusActive:
 		return activeBadge.Render(padded)
+	case display.StatusWaiting:
+		return waitingBadge.Render(padded)
 	case display.StatusIdle:
 		return idleBadge.Render(padded)
 	case display.StatusDead:
