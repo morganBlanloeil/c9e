@@ -39,7 +39,7 @@ func ListClaude() (map[int]Info, error) {
 		}
 
 		cmdStr := strings.Join(fields[10:], " ")
-		if !isClaude(cmdStr) {
+		if !isClaudeCodeCLI(cmdStr) {
 			continue
 		}
 
@@ -74,7 +74,7 @@ func IsAlive(pid int) bool {
 	return cmd.Run() == nil
 }
 
-func isClaude(cmd string) bool {
+func isClaudeCodeCLI(cmd string) bool {
 	lower := strings.ToLower(cmd)
 	if !strings.Contains(lower, "claude") {
 		return false

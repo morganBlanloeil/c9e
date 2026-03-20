@@ -9,16 +9,23 @@ import (
 	"time"
 )
 
-// Colors
+// ANSI colors for static (non-TUI) table output.
 const (
-	Red    = "\033[0;31m"
-	Green  = "\033[0;32m"
-	Yellow = "\033[1;33m"
-	Cyan   = "\033[0;36m"
-	Dim    = "\033[2m"
-	Bold   = "\033[1m"
-	Reset  = "\033[0m"
+	ansiRed    = "\033[0;31m"
+	ansiGreen  = "\033[0;32m"
+	ansiYellow = "\033[1;33m"
+	ansiCyan   = "\033[0;36m"
+	ansiDim    = "\033[2m"
+	ansiBold   = "\033[1m"
+	ansiReset  = "\033[0m"
 )
+
+// CleanAction removes newlines and carriage returns from a string.
+func CleanAction(s string) string {
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", "")
+	return s
+}
 
 // Status represents the state of a Claude Code instance.
 type Status string
@@ -66,21 +73,21 @@ func RenderTable(rows []Row) {
 	}
 
 	fmt.Println()
-	fmt.Printf("%s%s  Claude Code Dashboard%s  %s%s%s\n", Bold, Cyan, Reset, Dim, time.Now().Format("15:04:05"), Reset)
+	fmt.Printf("%s%s  Claude Code Dashboard%s  %s%s%s\n", ansiBold, ansiCyan, ansiReset, ansiDim, time.Now().Format("15:04:05"), ansiReset)
 	printSep()
 
-	fmt.Printf("  %s● %d running%s", Green, activeCount+idleCount, Reset)
+	fmt.Printf("  %s● %d running%s", ansiGreen, activeCount+idleCount, ansiReset)
 	if idleCount > 0 {
-		fmt.Printf("  %s◐ %d idle%s", Yellow, idleCount, Reset)
+		fmt.Printf("  %s◐ %d idle%s", ansiYellow, idleCount, ansiReset)
 	}
 	if deadCount > 0 {
-		fmt.Printf("  %s○ %d dead%s", Red, deadCount, Reset)
+		fmt.Printf("  %s○ %d dead%s", ansiRed, deadCount, ansiReset)
 	}
 	fmt.Println()
 	printSep()
 
 	fmt.Printf("  %s%-6s  %-8s  %5s  %5s  %-10s  %-9s  %-40s  %s%s\n",
-		Dim, "PID", "STATUS", "CPU%", "MEM%", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION", Reset)
+		ansiDim, "PID", "STATUS", "CPU%", "MEM%", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION", ansiReset)
 	printSep()
 
 	for _, r := range rows {
@@ -90,15 +97,15 @@ func RenderTable(rows []Row) {
 		uptime := formatDuration(r.UptimeSec)
 		idle := formatIdle(r.IdleSec)
 		cwd := truncate(filepath.Base(r.Cwd), 40)
-		action := cleanAction(truncate(r.LastAction, 50))
+		action := CleanAction(truncate(r.LastAction, 50))
 
 		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5s  %5s  %-10s  %-9s  %s%-40s%s  %s\n",
-			statusColor, icon, Reset,
+			statusColor, icon, ansiReset,
 			"", r.PID, "",
-			statusColor, r.Status, Reset,
+			statusColor, r.Status, ansiReset,
 			r.CPU, r.Mem,
 			uptime, idle,
-			Dim, cwd, Reset,
+			ansiDim, cwd, ansiReset,
 			action,
 		)
 	}
@@ -115,19 +122,19 @@ func RenderJSON(rows []Row) error {
 }
 
 func printSep() {
-	fmt.Printf("%s  %s%s\n", Dim, strings.Repeat("─", 97), Reset)
+	fmt.Printf("%s  %s%s\n", ansiDim, strings.Repeat("─", 97), ansiReset)
 }
 
 func colorFor(s Status) string {
 	switch s {
 	case StatusActive:
-		return Green
+		return ansiGreen
 	case StatusIdle:
-		return Yellow
+		return ansiYellow
 	case StatusDead:
-		return Red
+		return ansiRed
 	default:
-		return Reset
+		return ansiReset
 	}
 }
 
@@ -180,11 +187,5 @@ func truncate(s string, max int) string {
 	if len(s) > max {
 		return s[:max-1] + "…"
 	}
-	return s
-}
-
-func cleanAction(s string) string {
-	s = strings.ReplaceAll(s, "\n", " ")
-	s = strings.ReplaceAll(s, "\r", "")
 	return s
 }

@@ -9,6 +9,12 @@ import (
 	"github.com/wescale/claude-dashboard/internal/logs"
 )
 
+// Layout constants: fixed lines consumed by UI chrome.
+const (
+	listFixedLines = 8 // title, 2 separators, summary, header, separator, footer separator, help
+	logFixedLines  = 7 // title, 2 separators, status bar, separator, footer separator, help
+)
+
 func (m Model) viewList() string {
 	var b strings.Builder
 
@@ -67,12 +73,9 @@ func (m Model) viewList() string {
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Rows
-	visibleRows := m.height - 8 // account for header, footer, separators
+	visibleRows := max(1, m.height-listFixedLines)
 	if m.filtering || m.filter != "" {
-		visibleRows--
-	}
-	if visibleRows < 1 {
-		visibleRows = 1
+		visibleRows = max(1, visibleRows-1)
 	}
 
 	// Scroll offset
@@ -126,7 +129,7 @@ func (m Model) renderRow(r display.Row) string {
 	uptime := formatDuration(r.UptimeSec)
 	idle := formatIdle(r.IdleSec)
 	cwd := truncate(filepath.Base(r.Cwd), 40)
-	action := cleanAction(truncate(r.LastAction, 50))
+	action := display.CleanAction(truncate(r.LastAction, 50))
 
 	return fmt.Sprintf("  %s %-6d  %s  %5s  %5s  %-10s  %-9s  %-40s  %s",
 		icon, r.PID, status, r.CPU, r.Mem, uptime, idle, dimStyle.Render(cwd), action)
@@ -158,7 +161,7 @@ func (m Model) viewDetail() string {
 		{"Memory", r.Mem + "%"},
 		{"Uptime", formatDuration(r.UptimeSec)},
 		{"Idle", formatIdle(r.IdleSec)},
-		{"Last Action", cleanAction(r.LastAction)},
+		{"Last Action", display.CleanAction(r.LastAction)},
 	}
 
 	for _, f := range fields {
@@ -250,12 +253,6 @@ func truncate(s string, maxLen int) string {
 	if len(s) > maxLen {
 		return s[:maxLen-1] + "…"
 	}
-	return s
-}
-
-func cleanAction(s string) string {
-	s = strings.ReplaceAll(s, "\n", " ")
-	s = strings.ReplaceAll(s, "\r", "")
 	return s
 }
 

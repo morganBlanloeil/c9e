@@ -420,11 +420,7 @@ func (m *Model) filterLogEntries() {
 }
 
 func (m Model) logVisibleLines() int {
-	v := m.height - 7 // title, 2 separators, status bar, separator, help, padding
-	if v < 1 {
-		return 1
-	}
-	return v
+	return max(1, m.height-logFixedLines)
 }
 
 func (m *Model) logScrollToBottom() {
