@@ -170,6 +170,12 @@ func runStatic(jsonOutput bool) error {
 			status = display.StatusWaiting
 		}
 
+		// Count conversation turns
+		turns := 0
+		if logPath != "" {
+			turns = logs.CountTurns(logPath)
+		}
+
 		// Estimate cost
 		var costStr string
 		var costValue float64
@@ -199,6 +205,7 @@ func runStatic(jsonOutput bool) error {
 			LastAction:   lastAction,
 			Alive:        alive,
 			LogPath:      logPath,
+			Turns:        turns,
 			Cost:         costStr,
 			CostValue:    costValue,
 			InputTokens:  inputTokens,

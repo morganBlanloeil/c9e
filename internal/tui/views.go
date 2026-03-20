@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -14,7 +15,7 @@ import (
 
 // Layout constants: fixed lines consumed by UI chrome.
 const (
-	listFixedLines = 8 // title, 2 separators, summary, header, separator, footer separator, help
+	listFixedLines = 9 // title, 2 separators, summary, header, separator, footer separator, stats, help
 	logFixedLines  = 7 // title, 2 separators, status bar, separator, footer separator, help
 )
 
@@ -79,10 +80,19 @@ func (m Model) viewList() string {
 	// Separator
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
-	// Header
-	header := fmt.Sprintf("  %-6s  %-8s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s",
-		"PID", "STATUS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION")
-	b.WriteString(headerStyle.Render(header) + "\n")
+	// Sort indicator
+	sortInfo := dimStyle.Render(fmt.Sprintf("  sort: %s", sortColumnNames[m.sortCol]))
+	if m.sortAsc {
+		sortInfo += dimStyle.Render(" ▲")
+	} else {
+		sortInfo += dimStyle.Render(" ▼")
+	}
+
+	// Header with sort indicator on the right
+	header := fmt.Sprintf("  %-6s  %-8s  %5s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s",
+		"PID", "STATUS", "TURNS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION")
+	headerLine := headerStyle.Render(header)
+	b.WriteString(headerLine + "  " + sortInfo + "\n")
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Rows
@@ -118,12 +128,29 @@ func (m Model) viewList() string {
 	// Footer
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
+	// Aggregate stats bar
+	var totalCPU, totalMem float64
+	for _, r := range m.rows {
+		c, _ := strconv.ParseFloat(r.CPU, 64)
+		totalCPU += c
+		me, _ := strconv.ParseFloat(r.Mem, 64)
+		totalMem += me
+	}
+	stats := fmt.Sprintf("  %d sessions  |  CPU: %.1f%%  MEM: %.1f%%  |  %d active  %d idle  %d dead",
+		len(m.rows), totalCPU, totalMem, active, idle, dead)
+	b.WriteString(dimStyle.Render(stats) + "\n")
+
 	if m.err != nil {
 		b.WriteString(deadBadge.Render(fmt.Sprintf("  error: %v", m.err)) + "\n")
 	}
 
 	if flash := m.activeFlash(); flash != "" {
 		b.WriteString(notifyFlashStyle.Render("  "+flash) + "\n")
+	}
+
+	// Clipboard flash
+	if m.clipboardFlash != "" {
+		b.WriteString(activeCountStyle.Render("  "+m.clipboardFlash) + "\n")
 	}
 
 	if m.confirm != nil {
@@ -133,7 +160,7 @@ func (m Model) viewList() string {
 		if m.notifyEnabled {
 			notifyState = notifyOnStyle.Render("ON")
 		}
-		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  n: notify %s  q: quit", notifyState)
+		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  s/S: sort  c: copy cwd  n: notify %s  q: quit", notifyState)
 		b.WriteString(helpStyle.Render(help))
 	}
 
@@ -151,14 +178,15 @@ func (m Model) renderRow(r display.Row) string {
 	idle := formatIdle(r.IdleSec)
 	cwd := truncate(filepath.Base(r.Cwd), 40)
 	action := display.CleanAction(truncate(r.LastAction, 50))
+	turns := fmt.Sprintf("%5d", r.Turns)
 
 	costStr := "—"
 	if r.Cost != "" {
 		costStr = styledCost(r.CostValue).Render(fmt.Sprintf("%8s", r.Cost))
 	}
 
-	return fmt.Sprintf("  %s %-6d  %s  %5s  %5s  %s  %-10s  %-9s  %-40s  %s",
-		icon, r.PID, status, r.CPU, r.Mem, costStr, uptime, idle, dimStyle.Render(cwd), action)
+	return fmt.Sprintf("  %s %-6d  %s  %s  %5s  %5s  %s  %-10s  %-9s  %-40s  %s",
+		icon, r.PID, status, turns, r.CPU, r.Mem, costStr, uptime, idle, dimStyle.Render(cwd), action)
 }
 
 func (m Model) viewDetail() string {
@@ -204,6 +232,7 @@ func (m Model) viewDetail() string {
 		{"Memory", r.Mem + "%"},
 		{"Uptime", formatDuration(r.UptimeSec)},
 		{"Idle", formatIdle(r.IdleSec)},
+		{"Turns", fmt.Sprintf("%d", r.Turns)},
 		{costLabel, costDisplay + tokenInfo},
 		{"Model", modelDisplay},
 		{"Last Action", display.CleanAction(r.LastAction)},
