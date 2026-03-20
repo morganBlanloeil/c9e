@@ -51,7 +51,29 @@ export PATH="$HOME/.claude/bin:$PATH"
 > **Current version:** <!-- x-release-please-version -->1.3.0<!-- x-release-please-version-end --> — see [changelog](CHANGELOG.md) for details.
 
 <details>
-<summary>Alternative: install from source with mise</summary>
+<summary>Alternative: install with mise</summary>
+
+Install globally with [mise](https://mise.jdx.dev/) (downloads the binary from GitHub Releases):
+
+```bash
+mise use -g ubi:morganBlanloeil/c9e
+```
+
+The binary is automatically added to your PATH by mise.
+
+</details>
+
+<details>
+<summary>Alternative: install with go</summary>
+
+```bash
+go install github.com/morganBlanloeil/c9e/cmd/c9e@latest
+```
+
+</details>
+
+<details>
+<summary>Alternative: build from source</summary>
 
 Requires [mise](https://mise.jdx.dev/) and Go 1.26+:
 
@@ -62,15 +84,6 @@ mise run install
 ```
 
 This builds the binary and installs it to `~/.claude/bin/c9e`.
-
-</details>
-
-<details>
-<summary>Alternative: install with go</summary>
-
-```bash
-go install github.com/morganBlanloeil/c9e/cmd/c9e@latest
-```
 
 </details>
 
