@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
+
+	"github.com/wescale/claude-dashboard/internal/cost"
 	"github.com/wescale/claude-dashboard/internal/display"
 	"github.com/wescale/claude-dashboard/internal/logs"
 )
@@ -28,6 +31,7 @@ func (m Model) viewList() string {
 
 	// Summary counts
 	active, waiting, idle, dead := 0, 0, 0, 0
+	var totalCost float64
 	for _, r := range m.rows {
 		switch r.Status {
 		case display.StatusActive:
@@ -39,6 +43,7 @@ func (m Model) viewList() string {
 		case display.StatusDead:
 			dead++
 		}
+		totalCost += r.CostValue
 	}
 	doneCount := 0
 	for sid := range m.doneHighlight {
@@ -59,6 +64,9 @@ func (m Model) viewList() string {
 	if doneCount > 0 {
 		summary += "  " + doneCountStyle.Render(fmt.Sprintf("★ %d done", doneCount))
 	}
+	if totalCost > 0 {
+		summary += "  " + styledCost(totalCost).Render(fmt.Sprintf("Total: %s", cost.Format(totalCost)))
+	}
 	b.WriteString(summary + "\n")
 
 	// Filter bar
@@ -72,8 +80,8 @@ func (m Model) viewList() string {
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Header
-	header := fmt.Sprintf("  %-6s  %-8s  %5s  %5s  %-10s  %-9s  %-40s  %s",
-		"PID", "STATUS", "CPU%", "MEM%", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION")
+	header := fmt.Sprintf("  %-6s  %-8s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s",
+		"PID", "STATUS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION")
 	b.WriteString(headerStyle.Render(header) + "\n")
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
@@ -144,8 +152,13 @@ func (m Model) renderRow(r display.Row) string {
 	cwd := truncate(filepath.Base(r.Cwd), 40)
 	action := display.CleanAction(truncate(r.LastAction, 50))
 
-	return fmt.Sprintf("  %s %-6d  %s  %5s  %5s  %-10s  %-9s  %-40s  %s",
-		icon, r.PID, status, r.CPU, r.Mem, uptime, idle, dimStyle.Render(cwd), action)
+	costStr := "—"
+	if r.Cost != "" {
+		costStr = styledCost(r.CostValue).Render(fmt.Sprintf("%8s", r.Cost))
+	}
+
+	return fmt.Sprintf("  %s %-6d  %s  %5s  %5s  %s  %-10s  %-9s  %-40s  %s",
+		icon, r.PID, status, r.CPU, r.Mem, costStr, uptime, idle, dimStyle.Render(cwd), action)
 }
 
 func (m Model) viewDetail() string {
@@ -162,6 +175,23 @@ func (m Model) viewDetail() string {
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n\n")
 
 	// Fields
+	costDisplay := "—"
+	if r.Cost != "" {
+		costDisplay = r.Cost
+	}
+	tokenInfo := ""
+	if r.InputTokens > 0 || r.OutputTokens > 0 {
+		tokenInfo = fmt.Sprintf(" (in: %s, out: %s)", formatTokenCount(r.InputTokens), formatTokenCount(r.OutputTokens))
+	}
+	costLabel := "Cost"
+	if !r.HasUsageData {
+		costLabel = "Cost (est.)"
+	}
+	modelDisplay := r.CostModel
+	if modelDisplay == "" {
+		modelDisplay = "—"
+	}
+
 	fields := []struct {
 		label string
 		value string
@@ -174,6 +204,8 @@ func (m Model) viewDetail() string {
 		{"Memory", r.Mem + "%"},
 		{"Uptime", formatDuration(r.UptimeSec)},
 		{"Idle", formatIdle(r.IdleSec)},
+		{costLabel, costDisplay + tokenInfo},
+		{"Model", modelDisplay},
 		{"Last Action", display.CleanAction(r.LastAction)},
 	}
 
@@ -234,6 +266,18 @@ func statusText(s display.Status) string {
 	}
 }
 
+// styledCost returns the appropriate lipgloss style for a cost value.
+func styledCost(costValue float64) lipgloss.Style {
+	switch {
+	case costValue > 1.0:
+		return costHigh
+	case costValue >= 0.10:
+		return costMedium
+	default:
+		return costLow
+	}
+}
+
 func formatDuration(seconds int64) string {
 	if seconds < 0 {
 		return "—"
@@ -264,6 +308,18 @@ func formatIdle(seconds int64) string {
 		return fmt.Sprintf("%dh %dm", seconds/3600, (seconds%3600)/60)
 	}
 	return fmt.Sprintf("%dd", seconds/86400)
+}
+
+// formatTokenCount formats a token count as a human-readable string (e.g. "1.2K", "3.4M").
+func formatTokenCount(tokens int64) string {
+	switch {
+	case tokens >= 1_000_000:
+		return fmt.Sprintf("%.1fM", float64(tokens)/1_000_000)
+	case tokens >= 1_000:
+		return fmt.Sprintf("%.1fK", float64(tokens)/1_000)
+	default:
+		return fmt.Sprintf("%d", tokens)
+	}
 }
 
 func truncate(s string, maxLen int) string {

@@ -85,6 +85,11 @@ var (
 	// Dim style
 	dimStyle = lipgloss.NewStyle().Foreground(dim)
 
+	// Cost column styles
+	costLow    = lipgloss.NewStyle().Foreground(green)                           // < $0.10
+	costMedium = lipgloss.NewStyle().Foreground(yellow)                          // $0.10 - $1.00
+	costHigh   = lipgloss.NewStyle().Foreground(red).Bold(true)                  // > $1.00
+
 	// Log view styles
 	logUserIcon   = lipgloss.NewStyle().Foreground(cyan).Bold(true)
 	logAssistIcon = lipgloss.NewStyle().Foreground(green).Bold(true)

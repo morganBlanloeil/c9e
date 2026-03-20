@@ -42,19 +42,25 @@ const IdleThreshold = 5 * time.Minute
 
 // Row represents a single dashboard row.
 type Row struct {
-	PID            int    `json:"pid"`
-	SessionID      string `json:"session_id"`
-	FullSessionID  string `json:"full_session_id"`
-	Status         Status `json:"status"`
-	CPU            string `json:"cpu"`
-	Mem            string `json:"mem"`
-	Cwd            string `json:"cwd"`
-	RawCwd         string `json:"-"` // unexpanded cwd for log path resolution
-	UptimeSec      int64  `json:"uptime_s"`
-	IdleSec        int64  `json:"idle_s"`
-	LastAction     string `json:"last_action"`
-	Alive          bool   `json:"alive"`
-	LogPath        string `json:"log_path,omitempty"`
+	PID            int     `json:"pid"`
+	SessionID      string  `json:"session_id"`
+	FullSessionID  string  `json:"full_session_id"`
+	Status         Status  `json:"status"`
+	CPU            string  `json:"cpu"`
+	Mem            string  `json:"mem"`
+	Cwd            string  `json:"cwd"`
+	RawCwd         string  `json:"-"` // unexpanded cwd for log path resolution
+	UptimeSec      int64   `json:"uptime_s"`
+	IdleSec        int64   `json:"idle_s"`
+	LastAction     string  `json:"last_action"`
+	Alive          bool    `json:"alive"`
+	LogPath        string  `json:"log_path,omitempty"`
+	Cost           string  `json:"cost"`                  // pre-formatted cost string
+	CostValue      float64 `json:"cost_value"`            // raw cost for sorting
+	InputTokens    int64   `json:"input_tokens,omitempty"`
+	OutputTokens   int64   `json:"output_tokens,omitempty"`
+	CostModel      string  `json:"cost_model,omitempty"`
+	HasUsageData   bool    `json:"has_usage_data"`
 }
 
 // RenderTable prints the dashboard table to stdout.
@@ -87,8 +93,8 @@ func RenderTable(rows []Row) {
 	fmt.Println()
 	printSep()
 
-	fmt.Printf("  %s%-6s  %-8s  %5s  %5s  %-10s  %-9s  %-40s  %s%s\n",
-		ansiDim, "PID", "STATUS", "CPU%", "MEM%", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION", ansiReset)
+	fmt.Printf("  %s%-6s  %-8s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s%s\n",
+		ansiDim, "PID", "STATUS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION", ansiReset)
 	printSep()
 
 	for _, r := range rows {
@@ -100,11 +106,17 @@ func RenderTable(rows []Row) {
 		cwd := truncate(filepath.Base(r.Cwd), 40)
 		action := CleanAction(truncate(r.LastAction, 50))
 
-		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5s  %5s  %-10s  %-9s  %s%-40s%s  %s\n",
+		costStr := r.Cost
+		if costStr == "" {
+			costStr = "—"
+		}
+
+		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5s  %5s  %8s  %-10s  %-9s  %s%-40s%s  %s\n",
 			statusColor, icon, ansiReset,
 			"", r.PID, "",
 			statusColor, r.Status, ansiReset,
 			r.CPU, r.Mem,
+			costStr,
 			uptime, idle,
 			ansiDim, cwd, ansiReset,
 			action,
@@ -123,7 +135,7 @@ func RenderJSON(rows []Row) error {
 }
 
 func printSep() {
-	fmt.Printf("%s  %s%s\n", ansiDim, strings.Repeat("─", 97), ansiReset)
+	fmt.Printf("%s  %s%s\n", ansiDim, strings.Repeat("─", 107), ansiReset)
 }
 
 func colorFor(s Status) string {

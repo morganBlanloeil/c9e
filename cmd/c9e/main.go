@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"golang.org/x/term"
 
+	"github.com/wescale/claude-dashboard/internal/cost"
 	"github.com/wescale/claude-dashboard/internal/display"
 	"github.com/wescale/claude-dashboard/internal/history"
 	"github.com/wescale/claude-dashboard/internal/logs"
@@ -169,17 +170,41 @@ func runStatic(jsonOutput bool) error {
 			status = display.StatusWaiting
 		}
 
+		// Estimate cost
+		var costStr string
+		var costValue float64
+		var inputTokens, outputTokens int64
+		var costModel string
+		var hasUsageData bool
+		if logPath != "" {
+			if c, err := cost.EstimateFromLog(logPath); err == nil {
+				costValue = c.EstimatedCost
+				costStr = cost.Format(c.EstimatedCost)
+				inputTokens = c.InputTokens
+				outputTokens = c.OutputTokens
+				costModel = c.Model
+				hasUsageData = c.HasUsageData
+			}
+		}
+
 		rows = append(rows, display.Row{
-			PID:        s.PID,
-			SessionID:  s.SessionID[:8],
-			Status:     status,
-			CPU:        cpu,
-			Mem:        mem,
-			Cwd:        s.ShortCwd(),
-			UptimeSec:  uptimeSec,
-			IdleSec:    idleSec,
-			LastAction: lastAction,
-			Alive:      alive,
+			PID:          s.PID,
+			SessionID:    s.SessionID[:8],
+			Status:       status,
+			CPU:          cpu,
+			Mem:          mem,
+			Cwd:          s.ShortCwd(),
+			UptimeSec:    uptimeSec,
+			IdleSec:      idleSec,
+			LastAction:   lastAction,
+			Alive:        alive,
+			LogPath:      logPath,
+			Cost:         costStr,
+			CostValue:    costValue,
+			InputTokens:  inputTokens,
+			OutputTokens: outputTokens,
+			CostModel:    costModel,
+			HasUsageData: hasUsageData,
 		})
 	}
 
