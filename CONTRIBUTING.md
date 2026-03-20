@@ -83,11 +83,76 @@ All colors use `lipgloss.AdaptiveColor{Light: "...", Dark: "..."}` to support bo
 
 ### Data sources
 
-The dashboard reads Claude Code's local state files. These are undocumented and may change between Claude Code versions. Key locations:
+The dashboard reads Claude Code's local state files. These are undocumented and may change between Claude Code versions.
 
-- `~/.claude/sessions/*.json` — one file per active session
-- `~/.claude/history.jsonl` — append-only log of user messages
-- Process detection via `ps aux` filtering for `claude` CLI processes
+#### Sessions — `~/.claude/sessions/*.json`
+
+Each running Claude Code instance creates a JSON file named `<pid>.json` in `~/.claude/sessions/`. The file is created at startup and removed when the session ends cleanly.
+
+```json
+{
+  "pid": 43074,
+  "sessionId": "a792857c-fcc5-4698-80ff-23497d4971b6",
+  "cwd": "/Users/me/repos/my-project",
+  "startedAt": 1773995830484
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pid` | int | OS process ID, used to check if the process is still alive |
+| `sessionId` | string (UUID) | Unique session identifier, used as join key with history |
+| `cwd` | string | Working directory at session start |
+| `startedAt` | int64 | Unix timestamp in milliseconds |
+
+If a Claude Code process crashes or is killed, the session file remains — this is how we detect `DEAD` sessions (file exists but process is gone).
+
+**Code:** `internal/session/session.go`
+
+#### History — `~/.claude/history.jsonl`
+
+Every user message sent to Claude Code is appended as a JSON line to `~/.claude/history.jsonl`. The dashboard reads the tail of this file (~512KB) to find the last action per session.
+
+```json
+{
+  "display": "fix the login bug",
+  "pastedContents": {},
+  "timestamp": 1773947857584,
+  "project": "/Users/me/repos/my-project",
+  "sessionId": "a792857c-fcc5-4698-80ff-23497d4971b6"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `display` | string | The user's message text |
+| `timestamp` | int64 | Unix timestamp in milliseconds |
+| `project` | string | Project directory |
+| `sessionId` | string (UUID) | Links to the session file |
+
+The `idle` duration is calculated as `now - last_action_timestamp`. A session with no action for more than 5 minutes is marked `IDLE`.
+
+**Code:** `internal/history/history.go`
+
+#### Process stats — `ps aux`
+
+Live CPU and memory usage is obtained by running `ps aux` and filtering lines that contain `claude` (excluding `Claude.app` desktop processes). The PID from `ps` is matched against session files to determine if a session is alive.
+
+A process is identified as a Claude Code CLI instance if:
+
+- The command line contains "claude" (case-insensitive)
+- The command line does NOT contain "Claude.app" or "Claude Helper"
+
+**Code:** `internal/process/process.go`
+
+#### How it all connects
+
+```
+sessions/*.json ──(pid)──→ ps aux        → alive? cpu? mem?
+                 ──(sessionId)──→ history.jsonl → last action? idle time?
+```
+
+The `sessionId` is the join key between session files and history. The `pid` is used to match against running processes.
 
 ### Adding a new column
 
