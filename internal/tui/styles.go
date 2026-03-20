@@ -13,6 +13,8 @@ var (
 	text   = lipgloss.AdaptiveColor{Light: "#1A1A1A", Dark: "#FAFAFA"}
 	purple = lipgloss.AdaptiveColor{Light: "#6A1B9A", Dark: "#AF87FF"}
 
+	doneColor = lipgloss.AdaptiveColor{Light: "#CC6600", Dark: "#FFB347"}
+
 	selectedBg = lipgloss.AdaptiveColor{Light: "#D0D0D0", Dark: "#303030"}
 	selectedFg = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
 
@@ -43,6 +45,10 @@ var (
 	activeBadge = lipgloss.NewStyle().Foreground(green).Bold(true)
 	idleBadge   = lipgloss.NewStyle().Foreground(yellow).Bold(true)
 	deadBadge   = lipgloss.NewStyle().Foreground(red).Bold(true)
+	doneBadge   = lipgloss.NewStyle().Foreground(doneColor).Bold(true).Blink(true)
+
+	// Done summary count
+	doneCountStyle = lipgloss.NewStyle().Foreground(doneColor).Bold(true)
 
 	// Footer / help bar
 	helpStyle = lipgloss.NewStyle().

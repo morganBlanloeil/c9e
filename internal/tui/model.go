@@ -38,6 +38,10 @@ type Model struct {
 	err       error
 	version   string
 
+	// Task-finished highlight state
+	prevStatus    map[string]string    // previous refresh status keyed by session ID
+	doneHighlight map[string]time.Time // sessions that just finished, with expiry time
+
 	// Log view state
 	logEntries   []logs.LogEntry
 	logFiltered  []logs.LogEntry
@@ -66,8 +70,16 @@ type killMsg struct {
 // NewModel creates a new TUI model.
 func NewModel(version string) Model {
 	return Model{
-		version: version,
+		version:       version,
+		prevStatus:    make(map[string]string),
+		doneHighlight: make(map[string]time.Time),
 	}
+}
+
+// isDone returns true if the session recently finished its task.
+func (m Model) isDone(sessionID string) bool {
+	expiry, ok := m.doneHighlight[sessionID]
+	return ok && time.Now().Before(expiry)
 }
 
 // tickMsg triggers a data refresh.
@@ -137,6 +149,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			sort.Slice(m.rows, func(i, j int) bool {
 				return m.rows[i].PID < m.rows[j].PID
 			})
+
+			// Detect sessions that transitioned from ACTIVE to IDLE/DEAD
+			now := time.Now()
+			curStatus := make(map[string]string, len(m.rows))
+			for _, r := range m.rows {
+				curStatus[r.SessionID] = string(r.Status)
+				prev, hasPrev := m.prevStatus[r.SessionID]
+				if hasPrev && prev == string(display.StatusActive) &&
+					(r.Status == display.StatusIdle || r.Status == display.StatusDead) {
+					m.doneHighlight[r.SessionID] = now.Add(30 * time.Second)
+				}
+			}
+			// Prune expired highlights
+			for sid, expiry := range m.doneHighlight {
+				if now.After(expiry) {
+					delete(m.doneHighlight, sid)
+				}
+			}
+			m.prevStatus = curStatus
+
 			m.applyFilter()
 		}
 
