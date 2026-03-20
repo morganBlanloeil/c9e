@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.0](https://github.com/morganBlanloeil/c9e/compare/v1.2.1...v1.3.0) (2026-03-20)
+
+
+### Features
+
+* add cost estimation per session based on token usage ([3b819ef](https://github.com/morganBlanloeil/c9e/commit/3b819efd758b8f7cb1962b02abf0916ac9d8b15c))
+* add desktop notifications for task completion ([b000c9e](https://github.com/morganBlanloeil/c9e/commit/b000c9e9c093e2f2c512a29afeed250420df035c))
+* add quick wins - column sorting, turn counter, aggregate stats, copy CWD ([1777135](https://github.com/morganBlanloeil/c9e/commit/177713526ec5fd947fc662c3bd67e8975a1f9a9d))
+* add Stop hook to auto-update documentation after sessions ([ac49cfc](https://github.com/morganBlanloeil/c9e/commit/ac49cfc6bb2b35ae4c9165696ef88296b8920bc9))
+
+
+### Miscellaneous
+
+* update gitignore with claude artifacts and build binary ([dd1c7ef](https://github.com/morganBlanloeil/c9e/commit/dd1c7ef88bdef9c7ff56bc583b05012acd4c24a6))
+
 ## [1.2.1](https://github.com/morganBlanloeil/c9e/compare/v1.2.0...v1.2.1) (2026-03-20)
 
 
