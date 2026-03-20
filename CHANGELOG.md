@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.1](https://github.com/morganBlanloeil/c9e/compare/v1.2.0...v1.2.1) (2026-03-20)
+
+
+### CI
+
+* include ci/docs/chore commits in release-please changelog ([83ea857](https://github.com/morganBlanloeil/c9e/commit/83ea857335b343d0a2e3213da6f68e902f1d01cc))
+* wait for CI workflow to succeed before running release-please ([c9471b8](https://github.com/morganBlanloeil/c9e/commit/c9471b86c5202640524f4fae5ec54e50589022ef))
+
+
+### Documentation
+
+* orient install docs toward GitHub releases and auto-update version ([e03db30](https://github.com/morganBlanloeil/c9e/commit/e03db304eb726c973ab6ba4f0f04aaee6dcfeebf))
+* remove git clone install method, keep go install as alternative ([42c92ac](https://github.com/morganBlanloeil/c9e/commit/42c92ac09d8207713917e77fde33d5f60af5b369))
+
+
+### Miscellaneous
+
+* trigger release-please ([78e9223](https://github.com/morganBlanloeil/c9e/commit/78e9223ad55db125b0e60dc974690b3e686b654c))
+
 ## [1.2.0](https://github.com/morganBlanloeil/c9e/compare/v1.1.0...v1.2.0) (2026-03-20)
 
 
