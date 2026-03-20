@@ -17,19 +17,23 @@ A terminal dashboard for monitoring running Claude Code instances — like [k9s]
 
 ## Installation
 
-### Prerequisites
+### Download prebuilt binary (recommended)
 
-- [mise](https://mise.jdx.dev/) (recommended) or Go 1.26+
-
-### From source (mise)
+Download the latest release for your platform from [GitHub Releases](https://github.com/morganBlanloeil/c9e/releases/latest):
 
 ```bash
-git clone https://github.com/wescale/claude-dashboard.git
-cd claude-dashboard
-mise run install
-```
+# macOS (Apple Silicon)
+curl -Lo c9e https://github.com/morganBlanloeil/c9e/releases/latest/download/c9e-darwin-arm64
+# macOS (Intel)
+curl -Lo c9e https://github.com/morganBlanloeil/c9e/releases/latest/download/c9e-darwin-amd64
+# Linux (x86_64)
+curl -Lo c9e https://github.com/morganBlanloeil/c9e/releases/latest/download/c9e-linux-amd64
+# Linux (ARM64)
+curl -Lo c9e https://github.com/morganBlanloeil/c9e/releases/latest/download/c9e-linux-arm64
 
-The binary is installed to `~/.claude/bin/c9e`.
+chmod +x c9e
+mv c9e ~/.claude/bin/
+```
 
 Make sure `~/.claude/bin` is in your PATH:
 
@@ -38,10 +42,20 @@ Make sure `~/.claude/bin` is in your PATH:
 export PATH="$HOME/.claude/bin:$PATH"
 ```
 
+### From source (mise)
+
+```bash
+git clone https://github.com/morganBlanloeil/c9e.git
+cd c9e
+mise run install
+```
+
+The binary is installed to `~/.claude/bin/c9e`.
+
 ### From source (go install)
 
 ```bash
-go install github.com/wescale/claude-dashboard/cmd/c9e@latest
+go install github.com/morganBlanloeil/c9e/cmd/c9e@latest
 ```
 
 ## Usage
