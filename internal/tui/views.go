@@ -31,12 +31,21 @@ func (m Model) viewList() string {
 			dead++
 		}
 	}
+	doneCount := 0
+	for sid := range m.doneHighlight {
+		if m.isDone(sid) {
+			doneCount++
+		}
+	}
 	summary := "  " + activeCountStyle.Render(fmt.Sprintf("● %d active", active))
 	if idle > 0 {
 		summary += "  " + idleCountStyle.Render(fmt.Sprintf("◐ %d idle", idle))
 	}
 	if dead > 0 {
 		summary += "  " + deadCountStyle.Render(fmt.Sprintf("○ %d dead", dead))
+	}
+	if doneCount > 0 {
+		summary += "  " + doneCountStyle.Render(fmt.Sprintf("★ %d done", doneCount))
 	}
 	b.WriteString(summary + "\n")
 
@@ -109,6 +118,10 @@ func (m Model) viewList() string {
 func (m Model) renderRow(r display.Row) string {
 	icon := statusIcon(r.Status)
 	status := statusText(r.Status)
+	if m.isDone(r.SessionID) {
+		icon = doneBadge.Render("★")
+		status = doneBadge.Render(fmt.Sprintf("%-8s", "DONE"))
+	}
 	uptime := formatDuration(r.UptimeSec)
 	idle := formatIdle(r.IdleSec)
 	cwd := truncate(r.Cwd, 40)
@@ -151,7 +164,11 @@ func (m Model) viewDetail() string {
 		label := detailLabelStyle.Render("  " + f.label)
 		value := detailValueStyle.Render(f.value)
 		if f.label == "Status" {
-			value = statusIcon(r.Status) + " " + statusText(r.Status)
+			if m.isDone(r.SessionID) {
+				value = doneBadge.Render("★") + " " + doneBadge.Render("DONE")
+			} else {
+				value = statusIcon(r.Status) + " " + statusText(r.Status)
+			}
 		}
 		b.WriteString(label + "  " + value + "\n")
 	}
