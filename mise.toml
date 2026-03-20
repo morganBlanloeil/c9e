@@ -1,0 +1,41 @@
+[tools]
+go = "1.26"
+
+[env]
+BINARY_NAME = "claude-dashboard"
+BUILD_DIR = "dist"
+INSTALL_DIR = "{{env.HOME}}/.claude/bin"
+
+[tasks.build]
+description = "Build the binary"
+run = """
+VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS="-s -w -X main.version=${VERSION}"
+echo "Building ${BINARY_NAME} (${VERSION})..."
+go build -ldflags "${LDFLAGS}" -o "${BUILD_DIR}/${BINARY_NAME}" ./cmd/claude-dashboard/
+echo "Built ${BUILD_DIR}/${BINARY_NAME} ($(du -h ${BUILD_DIR}/${BINARY_NAME} | cut -f1 | xargs))"
+"""
+
+[tasks.install]
+description = "Build and install to ~/.claude/bin"
+depends = ["build"]
+run = """
+mkdir -p "${INSTALL_DIR}"
+cp "${BUILD_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
+echo "Installed to ${INSTALL_DIR}/${BINARY_NAME}"
+"""
+
+[tasks.uninstall]
+description = "Remove from ~/.claude/bin"
+run = """
+rm -f "${INSTALL_DIR}/${BINARY_NAME}"
+echo "Removed ${INSTALL_DIR}/${BINARY_NAME}"
+"""
+
+[tasks.clean]
+description = "Remove build artifacts"
+run = "rm -rf ${BUILD_DIR} ${BINARY_NAME}"
+
+[tasks.test]
+description = "Run tests"
+run = "go test ./..."
