@@ -48,7 +48,7 @@ Make sure `~/.claude/bin` is in your PATH:
 export PATH="$HOME/.claude/bin:$PATH"
 ```
 
-> **Current version:** <!-- x-release-please-version -->1.3.0<!-- x-release-please-version-end --> — see [changelog](CHANGELOG.md) for details.
+> **Current version:** <!-- x-release-please-version -->1.3.1<!-- x-release-please-version-end --> — see [changelog](CHANGELOG.md) for details.
 
 <details>
 <summary>Alternative: install with mise</summary>
