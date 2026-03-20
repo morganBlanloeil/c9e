@@ -70,6 +70,12 @@ func fetchRows() ([]display.Row, error) {
 			sid = sid[:8]
 		}
 
+		// Count conversation turns
+		turns := 0
+		if logPath != "" {
+			turns = logs.CountTurns(logPath)
+		}
+
 		// Estimate cost from session log
 		var costStr string
 		var costValue float64
@@ -101,6 +107,7 @@ func fetchRows() ([]display.Row, error) {
 			LastAction:    lastAction,
 			Alive:         alive,
 			LogPath:       logPath,
+			Turns:         turns,
 			Cost:          costStr,
 			CostValue:     costValue,
 			InputTokens:   inputTokens,

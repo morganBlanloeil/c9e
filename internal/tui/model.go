@@ -2,7 +2,10 @@ package tui
 
 import (
 	"fmt"
+	"os/exec"
+	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +16,23 @@ import (
 	"github.com/wescale/claude-dashboard/internal/notify"
 	"github.com/wescale/claude-dashboard/internal/process"
 )
+
+// SortColumn identifies which column to sort by.
+type SortColumn int
+
+const (
+	SortByPID SortColumn = iota
+	SortByStatus
+	SortByCPU
+	SortByMem
+	SortByUptime
+	SortByIdle
+	SortByDir
+	SortByAction
+	SortByTurns
+)
+
+var sortColumnNames = []string{"PID", "STATUS", "CPU%", "MEM%", "UPTIME", "IDLE", "DIR", "ACTION", "TURNS"}
 
 const refreshInterval = 3 * time.Second
 
@@ -48,6 +68,14 @@ type Model struct {
 	notifyFlash   string    // flash message shown briefly after notification
 	notifyFlashAt time.Time // when the flash was set
 
+	// Sort state
+	sortCol SortColumn
+	sortAsc bool // true = ascending, false = descending
+
+	// Clipboard flash
+	clipboardFlash    string
+	clipboardFlashEnd time.Time
+
 	// Log view state
 	logEntries   []logs.LogEntry
 	logFiltered  []logs.LogEntry
@@ -73,10 +101,30 @@ type killMsg struct {
 	err error
 }
 
+// clipboardFlashMsg clears the clipboard flash message.
+type clipboardFlashMsg struct{}
+
+// copyToClipboard copies text to system clipboard.
+func copyToClipboard(text string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("pbcopy")
+	case "linux":
+		cmd = exec.Command("xclip", "-selection", "clipboard")
+	default:
+		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
+	cmd.Stdin = strings.NewReader(text)
+	return cmd.Run()
+}
+
 // NewModel creates a new TUI model.
 func NewModel(version string) Model {
 	return Model{
 		version:       version,
+		sortCol:       SortByPID,
+		sortAsc:       true,
 		prevStatus:    make(map[string]string),
 		doneHighlight: make(map[string]time.Time),
 		notifyEnabled: notify.Available(),
@@ -160,13 +208,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Batch(cmds...)
 
+	case clipboardFlashMsg:
+		m.clipboardFlash = ""
+		return m, nil
+
 	case dataMsg:
 		m.err = msg.err
 		if msg.err == nil {
 			m.rows = msg.rows
-			sort.Slice(m.rows, func(i, j int) bool {
-				return m.rows[i].PID < m.rows[j].PID
-			})
+			m.sortRows()
 
 			// Detect sessions that transitioned from ACTIVE/WAITING to IDLE/DEAD
 			now := time.Now()
@@ -320,6 +370,27 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		case "n":
 			m.notifyEnabled = !m.notifyEnabled
+		case "s":
+			// Cycle sort column forward
+			m.sortCol = (m.sortCol + 1) % (SortByTurns + 1)
+			m.sortRows()
+			m.applyFilter()
+		case "S":
+			// Toggle sort direction
+			m.sortAsc = !m.sortAsc
+			m.sortRows()
+			m.applyFilter()
+		case "c":
+			// Copy selected session's CWD to clipboard
+			if r := m.selectedRow(); r != nil && r.RawCwd != "" {
+				if err := copyToClipboard(r.RawCwd); err == nil {
+					m.clipboardFlash = "Copied CWD!"
+					m.clipboardFlashEnd = time.Now().Add(2 * time.Second)
+					return m, tea.Tick(2*time.Second, func(_ time.Time) tea.Msg {
+						return clipboardFlashMsg{}
+					})
+				}
+			}
 		case "?":
 			// Could show help modal — for now just cycle
 		}
@@ -374,6 +445,42 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func (m *Model) sortRows() {
+	col := m.sortCol
+	asc := m.sortAsc
+	sort.SliceStable(m.rows, func(i, j int) bool {
+		less := false
+		switch col {
+		case SortByPID:
+			less = m.rows[i].PID < m.rows[j].PID
+		case SortByStatus:
+			less = string(m.rows[i].Status) < string(m.rows[j].Status)
+		case SortByCPU:
+			ci, _ := strconv.ParseFloat(m.rows[i].CPU, 64)
+			cj, _ := strconv.ParseFloat(m.rows[j].CPU, 64)
+			less = ci < cj
+		case SortByMem:
+			mi, _ := strconv.ParseFloat(m.rows[i].Mem, 64)
+			mj, _ := strconv.ParseFloat(m.rows[j].Mem, 64)
+			less = mi < mj
+		case SortByUptime:
+			less = m.rows[i].UptimeSec < m.rows[j].UptimeSec
+		case SortByIdle:
+			less = m.rows[i].IdleSec < m.rows[j].IdleSec
+		case SortByDir:
+			less = strings.ToLower(m.rows[i].Cwd) < strings.ToLower(m.rows[j].Cwd)
+		case SortByAction:
+			less = strings.ToLower(m.rows[i].LastAction) < strings.ToLower(m.rows[j].LastAction)
+		case SortByTurns:
+			less = m.rows[i].Turns < m.rows[j].Turns
+		}
+		if !asc {
+			return !less
+		}
+		return less
+	})
 }
 
 func (m *Model) applyFilter() {

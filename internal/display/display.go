@@ -55,6 +55,7 @@ type Row struct {
 	LastAction     string  `json:"last_action"`
 	Alive          bool    `json:"alive"`
 	LogPath        string  `json:"log_path,omitempty"`
+	Turns          int     `json:"turns"`                 // conversation turn count (user messages)
 	Cost           string  `json:"cost"`                  // pre-formatted cost string
 	CostValue      float64 `json:"cost_value"`            // raw cost for sorting
 	InputTokens    int64   `json:"input_tokens,omitempty"`
@@ -93,8 +94,8 @@ func RenderTable(rows []Row) {
 	fmt.Println()
 	printSep()
 
-	fmt.Printf("  %s%-6s  %-8s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s%s\n",
-		ansiDim, "PID", "STATUS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION", ansiReset)
+	fmt.Printf("  %s%-6s  %-8s  %5s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s%s\n",
+		ansiDim, "PID", "STATUS", "TURNS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION", ansiReset)
 	printSep()
 
 	for _, r := range rows {
@@ -111,10 +112,11 @@ func RenderTable(rows []Row) {
 			costStr = "—"
 		}
 
-		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5s  %5s  %8s  %-10s  %-9s  %s%-40s%s  %s\n",
+		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5d  %5s  %5s  %8s  %-10s  %-9s  %s%-40s%s  %s\n",
 			statusColor, icon, ansiReset,
 			"", r.PID, "",
 			statusColor, r.Status, ansiReset,
+			r.Turns,
 			r.CPU, r.Mem,
 			costStr,
 			uptime, idle,

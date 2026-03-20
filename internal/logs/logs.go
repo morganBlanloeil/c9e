@@ -284,6 +284,30 @@ func parseLine(data []byte) (LogEntry, bool) {
 	return LogEntry{}, false
 }
 
+// CountTurns counts user message entries in a session JSONL file.
+// It reads only the necessary structure to identify user messages.
+func CountTurns(path string) int {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+
+	count := 0
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 512*1024), 512*1024)
+	for scanner.Scan() {
+		var line jsonLine
+		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
+			continue
+		}
+		if line.Type == "user" {
+			count++
+		}
+	}
+	return count
+}
+
 func cleanSummary(s string, maxLen int) string {
 	s = strings.ReplaceAll(s, "\n", " ")
 	s = strings.ReplaceAll(s, "\r", "")
