@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/wescale/claude-dashboard/internal/display"
@@ -111,7 +112,7 @@ func (m Model) renderRow(r display.Row) string {
 	status := statusText(r.Status)
 	uptime := formatDuration(r.UptimeSec)
 	idle := formatIdle(r.IdleSec)
-	cwd := truncate(r.Cwd, 40)
+	cwd := truncate(filepath.Base(r.Cwd), 40)
 	action := cleanAction(truncate(r.LastAction, 50))
 
 	return fmt.Sprintf("  %s %-6d  %s  %5s  %5s  %-10s  %-9s  %-40s  %s",
@@ -139,7 +140,7 @@ func (m Model) viewDetail() string {
 		{"Status", string(r.Status)},
 		{"PID", fmt.Sprintf("%d", r.PID)},
 		{"Session ID", r.SessionID},
-		{"Directory", r.Cwd},
+		{"Directory", r.RawCwd},
 		{"CPU", r.CPU + "%"},
 		{"Memory", r.Mem + "%"},
 		{"Uptime", formatDuration(r.UptimeSec)},
