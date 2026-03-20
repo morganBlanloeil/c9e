@@ -41,6 +41,13 @@ Data flows: `session + history + process` → `display.Row` → `tui` or `displa
 
 **New TUI action:** define key in `tui/model.go` (`handleKey`) → use `confirmAction` pattern for destructive actions → update help bar in `tui/views.go`
 
+## Log Tail view
+
+The detail view (`Enter` on a session) shows a live log tail with two toggles in the status bar:
+
+- **follow** (`f`) — when ON, auto-scrolls to the bottom as new entries arrive (like `tail -f`). When OFF, free scroll through history.
+- **thinking** (`t`) — when ON, includes Claude's internal thinking blocks in the log. When OFF, hides them to keep only user/assistant messages.
+
 ## Data sources
 
 Reads Claude Code's undocumented local state (may change between versions):

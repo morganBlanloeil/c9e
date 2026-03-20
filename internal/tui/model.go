@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/wescale/claude-dashboard/internal/display"
+	"github.com/wescale/claude-dashboard/internal/logs"
 	"github.com/wescale/claude-dashboard/internal/process"
 )
 
@@ -20,6 +21,7 @@ type viewMode int
 const (
 	viewList viewMode = iota
 	viewDetail
+	viewLogs
 )
 
 // Model is the bubbletea model for the TUI.
@@ -35,6 +37,17 @@ type Model struct {
 	confirm   *confirmAction // pending confirmation prompt
 	err       error
 	version   string
+
+	// Log view state
+	logEntries   []logs.LogEntry
+	logFiltered  []logs.LogEntry
+	logScroll    int
+	logOffset    int64
+	logPath      string
+	logFollow    bool
+	logShowThink bool
+	logErr       error
+	logFrom      viewMode // view to return to on esc
 }
 
 // confirmAction holds a pending action requiring user confirmation.
@@ -66,6 +79,25 @@ type dataMsg struct {
 	err  error
 }
 
+// logDataMsg carries log entries from a fetch.
+type logDataMsg struct {
+	entries []logs.LogEntry
+	offset  int64
+	err     error
+	initial bool
+}
+
+func fetchLogCmd(path string, offset int64, initial bool) tea.Cmd {
+	return func() tea.Msg {
+		if initial {
+			entries, off, err := logs.ReadTail(path, 200)
+			return logDataMsg{entries: entries, offset: off, err: err, initial: true}
+		}
+		entries, off, err := logs.ReadFrom(path, offset)
+		return logDataMsg{entries: entries, offset: off, err: err, initial: false}
+	}
+}
+
 func doTick() tea.Cmd {
 	return tea.Tick(refreshInterval, func(t time.Time) tea.Msg {
 		return tickMsg(t)
@@ -92,7 +124,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 	case tickMsg:
-		return m, tea.Batch(fetchDataCmd(), doTick())
+		cmds := []tea.Cmd{fetchDataCmd(), doTick()}
+		if m.view == viewLogs && m.logPath != "" {
+			cmds = append(cmds, fetchLogCmd(m.logPath, m.logOffset, false))
+		}
+		return m, tea.Batch(cmds...)
 
 	case dataMsg:
 		m.err = msg.err
@@ -102,6 +138,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.rows[i].PID < m.rows[j].PID
 			})
 			m.applyFilter()
+		}
+
+	case logDataMsg:
+		m.logErr = msg.err
+		if msg.err == nil {
+			if msg.initial {
+				m.logEntries = msg.entries
+			} else if len(msg.entries) > 0 {
+				m.logEntries = append(m.logEntries, msg.entries...)
+			}
+			m.logOffset = msg.offset
+			m.filterLogEntries()
+			if m.logFollow {
+				// Scroll to bottom
+				m.logScrollToBottom()
+			}
 		}
 
 	case killMsg:
@@ -201,6 +253,10 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					},
 				}
 			}
+		case "l":
+			if cmd := m.openLogs(viewList); cmd != nil {
+				return m, cmd
+			}
 		case "?":
 			// Could show help modal — for now just cycle
 		}
@@ -211,6 +267,46 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.view = viewList
 		case "ctrl+c":
 			return m, tea.Quit
+		case "l":
+			if cmd := m.openLogs(viewDetail); cmd != nil {
+				return m, cmd
+			}
+		}
+
+	case viewLogs:
+		switch key {
+		case "q", "esc":
+			m.view = m.logFrom
+		case "ctrl+c":
+			return m, tea.Quit
+		case "j", "down":
+			visibleLines := m.logVisibleLines()
+			if m.logScroll < len(m.logFiltered)-visibleLines {
+				m.logScroll++
+				m.logFollow = false
+			}
+		case "k", "up":
+			if m.logScroll > 0 {
+				m.logScroll--
+				m.logFollow = false
+			}
+		case "G":
+			m.logScrollToBottom()
+			m.logFollow = true
+		case "g":
+			m.logScroll = 0
+			m.logFollow = false
+		case "f":
+			m.logFollow = !m.logFollow
+			if m.logFollow {
+				m.logScrollToBottom()
+			}
+		case "t":
+			m.logShowThink = !m.logShowThink
+			m.filterLogEntries()
+			if m.logFollow {
+				m.logScrollToBottom()
+			}
 		}
 	}
 
@@ -245,6 +341,8 @@ func (m Model) View() string {
 	switch m.view {
 	case viewDetail:
 		return m.viewDetail()
+	case viewLogs:
+		return m.viewLogs()
 	default:
 		return m.viewList()
 	}
@@ -256,4 +354,52 @@ func (m Model) selectedRow() *display.Row {
 		return &m.filtered[m.cursor]
 	}
 	return nil
+}
+
+func (m *Model) openLogs(from viewMode) tea.Cmd {
+	r := m.selectedRow()
+	if r == nil || r.LogPath == "" {
+		return nil
+	}
+	m.logPath = r.LogPath
+	m.logEntries = nil
+	m.logFiltered = nil
+	m.logScroll = 0
+	m.logOffset = 0
+	m.logFollow = true
+	m.logShowThink = false
+	m.logErr = nil
+	m.logFrom = from
+	m.view = viewLogs
+	return fetchLogCmd(m.logPath, 0, true)
+}
+
+func (m *Model) filterLogEntries() {
+	if m.logShowThink {
+		m.logFiltered = m.logEntries
+	} else {
+		m.logFiltered = nil
+		for _, e := range m.logEntries {
+			if !e.HasThink {
+				m.logFiltered = append(m.logFiltered, e)
+			}
+		}
+	}
+}
+
+func (m Model) logVisibleLines() int {
+	v := m.height - 7 // title, 2 separators, status bar, separator, help, padding
+	if v < 1 {
+		return 1
+	}
+	return v
+}
+
+func (m *Model) logScrollToBottom() {
+	visible := m.logVisibleLines()
+	if len(m.logFiltered) > visible {
+		m.logScroll = len(m.logFiltered) - visible
+	} else {
+		m.logScroll = 0
+	}
 }
