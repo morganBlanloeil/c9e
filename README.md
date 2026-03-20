@@ -2,6 +2,7 @@
 
 A terminal dashboard for monitoring running Claude Code instances — like [k9s](https://k9scli.io/) but for Claude Code.
 
+![Version](https://img.shields.io/github/v/release/morganBlanloeil/c9e?label=version)
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -17,9 +18,7 @@ A terminal dashboard for monitoring running Claude Code instances — like [k9s]
 
 ## Installation
 
-### Download prebuilt binary (recommended)
-
-Download the latest release for your platform from [GitHub Releases](https://github.com/morganBlanloeil/c9e/releases/latest):
+Download the latest binary for your platform from [GitHub Releases](https://github.com/morganBlanloeil/c9e/releases/latest) and install it:
 
 ```bash
 # macOS (Apple Silicon)
@@ -42,21 +41,22 @@ Make sure `~/.claude/bin` is in your PATH:
 export PATH="$HOME/.claude/bin:$PATH"
 ```
 
-### From source (mise)
+> **Current version:** <!-- x-release-please-version -->1.2.0<!-- x-release-please-version-end --> — see [changelog](CHANGELOG.md) for details.
+
+<details>
+<summary>Build from source</summary>
 
 ```bash
+# With mise
 git clone https://github.com/morganBlanloeil/c9e.git
 cd c9e
-mise run install
-```
+mise run install   # builds and copies to ~/.claude/bin/
 
-The binary is installed to `~/.claude/bin/c9e`.
-
-### From source (go install)
-
-```bash
+# Or with go install
 go install github.com/morganBlanloeil/c9e/cmd/c9e@latest
 ```
+
+</details>
 
 ## Usage
 
