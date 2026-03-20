@@ -14,8 +14,8 @@
 ## Project structure
 
 ```
-claude-dashboard/
-├── cmd/claude-dashboard/
+c9e/
+├── cmd/c9e/
 │   └── main.go              # CLI entry point, flags, modes
 ├── internal/
 │   ├── display/
@@ -43,7 +43,7 @@ The project follows a clear separation:
 - **`internal/session`**, **`internal/history`**, **`internal/process`** — data layer, each reads from one source
 - **`internal/display`** — static output rendering (table, JSON)
 - **`internal/tui`** — interactive TUI using bubbletea's Model-View-Update pattern
-- **`cmd/claude-dashboard`** — CLI entry point, flag parsing, mode selection
+- **`cmd/c9e`** — CLI entry point, flag parsing, mode selection
 
 Data flows: `session + history + process` -> `display.Row` -> `tui` or `display`
 
@@ -52,7 +52,7 @@ Data flows: `session + history + process` -> `display.Row` -> `tui` or `display`
 All commands use mise:
 
 ```bash
-mise run build      # Compile to dist/claude-dashboard
+mise run build      # Compile to dist/c9e
 mise run install    # Build + copy to ~/.claude/bin/
 mise run test       # Run go test ./...
 mise run clean      # Remove dist/ and build artifacts
@@ -65,7 +65,7 @@ The build injects the version from `git describe` into the binary via ldflags:
 
 ```bash
 go build -ldflags "-s -w -X main.version=$(git describe --tags --always --dirty)" \
-  -o dist/claude-dashboard ./cmd/claude-dashboard/
+  -o dist/c9e ./cmd/c9e/
 ```
 
 ## Conventions
@@ -159,14 +159,14 @@ The `sessionId` is the join key between session files and history. The `pid` is 
 1. Add the field to `display.Row` in `internal/display/display.go`
 2. Populate it in `internal/tui/data.go` (`fetchRows`)
 3. Render it in `internal/tui/views.go` (`renderRow`) and `internal/display/display.go` (`RenderTable`)
-4. Update the help text in `cmd/claude-dashboard/main.go`
+4. Update the help text in `cmd/c9e/main.go`
 
 ### Adding a new TUI action
 
 1. Define the key binding in `internal/tui/model.go` (`handleKey`, under `viewList` or `viewDetail`)
 2. If the action is destructive, use the `confirmAction` pattern (see kill implementation)
 3. Update the help bar in `internal/tui/views.go`
-4. Update the help text in `cmd/claude-dashboard/main.go`
+4. Update the help text in `cmd/c9e/main.go`
 
 ## Releasing
 
@@ -175,6 +175,6 @@ Tag a version and rebuild:
 ```bash
 git tag v0.1.0
 mise run install
-claude-dashboard --version
-# claude-dashboard v0.1.0
+c9e --version
+# c9e v0.1.0
 ```

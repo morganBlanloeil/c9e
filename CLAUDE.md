@@ -11,7 +11,7 @@ Terminal dashboard for monitoring running Claude Code instances — like k9s but
 All tasks use [mise](https://mise.jdx.dev/):
 
 ```bash
-mise run build      # Compile to dist/claude-dashboard (injects version via ldflags)
+mise run build      # Compile to dist/c9e (injects version via ldflags)
 mise run test       # Run go test ./...
 mise run install    # Build + copy to ~/.claude/bin/
 mise run clean      # Remove dist/ and build artifacts
@@ -26,7 +26,7 @@ Data flows: `session + history + process` → `display.Row` → `tui` or `displa
 - **Data layer** (`internal/session`, `internal/history`, `internal/process`, `internal/logs`) — each package reads from one source: session JSON files, history JSONL, `ps aux`, or session JSONL conversation logs
 - **Static output** (`internal/display`) — renders `display.Row` as table or JSON for `--table`/`--json` modes
 - **Interactive TUI** (`internal/tui`) — bubbletea Model-View-Update pattern with list, detail, and log tail views
-- **Entry point** (`cmd/claude-dashboard/main.go`) — flag parsing, mode selection, static mode row assembly
+- **Entry point** (`cmd/c9e/main.go`) — flag parsing, mode selection, static mode row assembly
 
 ## Key conventions
 
