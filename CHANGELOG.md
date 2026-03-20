@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/morganBlanloeil/c9e/compare/v1.1.0...v1.2.0) (2026-03-20)
+
+
+### Features
+
+* add binary download docs, compilation hook, and custom skills ([#5](https://github.com/morganBlanloeil/c9e/issues/5)) ([ba76e63](https://github.com/morganBlanloeil/c9e/commit/ba76e63b717a89791a829070da0e5c4fec51bd8d))
+* highlight finished Claude Code sessions with visual indicator ([11f8efa](https://github.com/morganBlanloeil/c9e/commit/11f8efafff9f73731c4fcdcb2d734630e4b7b774))
+
 ## [1.1.0](https://github.com/morganBlanloeil/c9e/compare/v1.0.1...v1.1.0) (2026-03-20)
 
 
