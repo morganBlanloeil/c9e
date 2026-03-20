@@ -76,4 +76,13 @@ var (
 
 	// Dim style
 	dimStyle = lipgloss.NewStyle().Foreground(dim)
+
+	// Log view styles
+	logUserIcon   = lipgloss.NewStyle().Foreground(cyan).Bold(true)
+	logAssistIcon = lipgloss.NewStyle().Foreground(green).Bold(true)
+	logToolIcon   = lipgloss.NewStyle().Foreground(yellow).Bold(true)
+	logThinkIcon  = lipgloss.NewStyle().Foreground(dim)
+	logTimestamp  = lipgloss.NewStyle().Foreground(dim)
+	logFollowOn   = lipgloss.NewStyle().Foreground(green).Bold(true)
+	logFollowOff  = lipgloss.NewStyle().Foreground(dim)
 )

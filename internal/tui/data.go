@@ -5,6 +5,7 @@ import (
 
 	"github.com/wescale/claude-dashboard/internal/display"
 	"github.com/wescale/claude-dashboard/internal/history"
+	"github.com/wescale/claude-dashboard/internal/logs"
 	"github.com/wescale/claude-dashboard/internal/process"
 	"github.com/wescale/claude-dashboard/internal/session"
 )
@@ -64,17 +65,22 @@ func fetchRows() ([]display.Row, error) {
 			sid = sid[:8]
 		}
 
+		logPath := logs.ResolvePath(s.SessionID, s.Cwd)
+
 		rows = append(rows, display.Row{
-			PID:        s.PID,
-			SessionID:  sid,
-			Status:     status,
-			CPU:        cpu,
-			Mem:        mem,
-			Cwd:        s.ShortCwd(),
-			UptimeSec:  uptimeSec,
-			IdleSec:    idleSec,
-			LastAction: lastAction,
-			Alive:      alive,
+			PID:           s.PID,
+			SessionID:     sid,
+			FullSessionID: s.SessionID,
+			Status:        status,
+			CPU:           cpu,
+			Mem:           mem,
+			Cwd:           s.ShortCwd(),
+			RawCwd:        s.Cwd,
+			UptimeSec:     uptimeSec,
+			IdleSec:       idleSec,
+			LastAction:    lastAction,
+			Alive:         alive,
+			LogPath:       logPath,
 		})
 	}
 

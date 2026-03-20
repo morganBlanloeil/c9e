@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/wescale/claude-dashboard/internal/display"
+	"github.com/wescale/claude-dashboard/internal/logs"
 )
 
 func (m Model) viewList() string {
@@ -98,7 +99,7 @@ func (m Model) viewList() string {
 	if m.confirm != nil {
 		b.WriteString(deadBadge.Render("  "+m.confirm.label) + "\n")
 	} else {
-		help := "  j/k: navigate  enter: detail  d: kill  /: filter  q: quit"
+		help := "  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  q: quit"
 		b.WriteString(helpStyle.Render(help))
 	}
 
@@ -163,7 +164,7 @@ func (m Model) viewDetail() string {
 
 	// Footer
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
-	b.WriteString(helpStyle.Render("  esc/q: back to list  ctrl+c: quit"))
+	b.WriteString(helpStyle.Render("  esc/q: back to list  l: logs  ctrl+c: quit"))
 
 	return b.String()
 }
@@ -238,4 +239,97 @@ func cleanAction(s string) string {
 	s = strings.ReplaceAll(s, "\n", " ")
 	s = strings.ReplaceAll(s, "\r", "")
 	return s
+}
+
+func (m Model) viewLogs() string {
+	r := m.selectedRow()
+	if r == nil {
+		return "No session selected"
+	}
+
+	var b strings.Builder
+
+	// Title
+	sid := r.FullSessionID
+	if sid == "" {
+		sid = r.SessionID
+	}
+	title := detailTitleStyle.Render(fmt.Sprintf("  Log Tail — Session %s", sid))
+	b.WriteString(title + "\n")
+	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+
+	// Status bar
+	followStr := logFollowOff.Render("OFF")
+	if m.logFollow {
+		followStr = logFollowOn.Render("ON")
+	}
+	thinkStr := logFollowOff.Render("OFF")
+	if m.logShowThink {
+		thinkStr = logFollowOn.Render("ON")
+	}
+
+	statusLine := fmt.Sprintf("  %d entries  follow: %s  thinking: %s",
+		len(m.logFiltered), followStr, thinkStr)
+	b.WriteString(statusLine + "\n")
+	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+
+	// Log entries
+	visibleLines := m.logVisibleLines()
+
+	if m.logErr != nil {
+		b.WriteString(deadBadge.Render(fmt.Sprintf("  error: %v", m.logErr)) + "\n")
+	} else if len(m.logFiltered) == 0 {
+		b.WriteString(dimStyle.Render("  No log entries found") + "\n")
+	}
+
+	rendered := 0
+	for i := m.logScroll; i < len(m.logFiltered) && rendered < visibleLines; i++ {
+		entry := m.logFiltered[i]
+		b.WriteString(renderLogEntry(entry, m.width) + "\n")
+		rendered++
+	}
+
+	// Pad empty space
+	for i := rendered; i < visibleLines; i++ {
+		b.WriteString("\n")
+	}
+
+	// Footer
+	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(helpStyle.Render("  j/k: scroll  G: bottom  g: top  f: follow  t: thinking  esc: back"))
+
+	return b.String()
+}
+
+func renderLogEntry(e logs.LogEntry, width int) string {
+	ts := logTimestamp.Render(e.Timestamp.Format("15:04:05"))
+
+	var icon string
+	switch {
+	case e.HasThink:
+		icon = logThinkIcon.Render("~")
+	case e.Type == logs.EntryUser:
+		if e.RawType == "tool_result" {
+			icon = logToolIcon.Render("T")
+		} else {
+			icon = logUserIcon.Render(">")
+		}
+	case e.RawType == "tool_use":
+		icon = logToolIcon.Render("T")
+	default:
+		icon = logAssistIcon.Render("<")
+	}
+
+	// Truncate summary to fit width (account for "  HH:MM:SS  X  " prefix ~18 chars)
+	maxSummary := width - 18
+	if maxSummary < 20 {
+		maxSummary = 20
+	}
+	summary := e.Summary
+	runes := []rune(summary)
+	if len(runes) > maxSummary {
+		summary = string(runes[:maxSummary-1]) + "…"
+	}
+
+	return fmt.Sprintf("  %s  %s  %s", ts, icon, summary)
 }

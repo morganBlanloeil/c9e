@@ -33,16 +33,19 @@ const IdleThreshold = 5 * time.Minute
 
 // Row represents a single dashboard row.
 type Row struct {
-	PID        int    `json:"pid"`
-	SessionID  string `json:"session_id"`
-	Status     Status `json:"status"`
-	CPU        string `json:"cpu"`
-	Mem        string `json:"mem"`
-	Cwd        string `json:"cwd"`
-	UptimeSec  int64  `json:"uptime_s"`
-	IdleSec    int64  `json:"idle_s"`
-	LastAction string `json:"last_action"`
-	Alive      bool   `json:"alive"`
+	PID            int    `json:"pid"`
+	SessionID      string `json:"session_id"`
+	FullSessionID  string `json:"full_session_id"`
+	Status         Status `json:"status"`
+	CPU            string `json:"cpu"`
+	Mem            string `json:"mem"`
+	Cwd            string `json:"cwd"`
+	RawCwd         string `json:"-"` // unexpanded cwd for log path resolution
+	UptimeSec      int64  `json:"uptime_s"`
+	IdleSec        int64  `json:"idle_s"`
+	LastAction     string `json:"last_action"`
+	Alive          bool   `json:"alive"`
+	LogPath        string `json:"log_path,omitempty"`
 }
 
 // RenderTable prints the dashboard table to stdout.
