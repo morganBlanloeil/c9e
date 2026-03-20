@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -88,7 +89,7 @@ func RenderTable(rows []Row) {
 
 		uptime := formatDuration(r.UptimeSec)
 		idle := formatIdle(r.IdleSec)
-		cwd := truncate(r.Cwd, 40)
+		cwd := truncate(filepath.Base(r.Cwd), 40)
 		action := cleanAction(truncate(r.LastAction, 50))
 
 		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5s  %5s  %-10s  %-9s  %s%-40s%s  %s\n",
