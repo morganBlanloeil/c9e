@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/morganBlanloeil/c9e/compare/v1.0.1...v1.1.0) (2026-03-20)
+
+
+### Features
+
+* integrate binary build into release-please workflow ([#3](https://github.com/morganBlanloeil/c9e/issues/3)) ([930321c](https://github.com/morganBlanloeil/c9e/commit/930321cb2f1d1e3ae45339e07a0174bccaa15f82))
+
 ## [1.0.1](https://github.com/morganBlanloeil/c9e/compare/v1.0.0...v1.0.1) (2026-03-20)
 
 
