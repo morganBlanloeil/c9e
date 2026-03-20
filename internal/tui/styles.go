@@ -93,4 +93,9 @@ var (
 	logTimestamp  = lipgloss.NewStyle().Foreground(dim)
 	logFollowOn   = lipgloss.NewStyle().Foreground(green).Bold(true)
 	logFollowOff  = lipgloss.NewStyle().Foreground(dim)
+
+	// Notification styles
+	notifyOnStyle    = lipgloss.NewStyle().Foreground(green).Bold(true)
+	notifyOffStyle   = lipgloss.NewStyle().Foreground(dim)
+	notifyFlashStyle = lipgloss.NewStyle().Foreground(doneColor).Bold(true)
 )

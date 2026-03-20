@@ -114,10 +114,18 @@ func (m Model) viewList() string {
 		b.WriteString(deadBadge.Render(fmt.Sprintf("  error: %v", m.err)) + "\n")
 	}
 
+	if flash := m.activeFlash(); flash != "" {
+		b.WriteString(notifyFlashStyle.Render("  "+flash) + "\n")
+	}
+
 	if m.confirm != nil {
 		b.WriteString(deadBadge.Render("  "+m.confirm.label) + "\n")
 	} else {
-		help := "  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  q: quit"
+		notifyState := notifyOffStyle.Render("OFF")
+		if m.notifyEnabled {
+			notifyState = notifyOnStyle.Render("ON")
+		}
+		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  n: notify %s  q: quit", notifyState)
 		b.WriteString(helpStyle.Render(help))
 	}
 

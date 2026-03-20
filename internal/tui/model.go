@@ -10,6 +10,7 @@ import (
 
 	"github.com/wescale/claude-dashboard/internal/display"
 	"github.com/wescale/claude-dashboard/internal/logs"
+	"github.com/wescale/claude-dashboard/internal/notify"
 	"github.com/wescale/claude-dashboard/internal/process"
 )
 
@@ -42,6 +43,11 @@ type Model struct {
 	prevStatus    map[string]string    // previous refresh status keyed by session ID
 	doneHighlight map[string]time.Time // sessions that just finished, with expiry time
 
+	// Notification state
+	notifyEnabled bool
+	notifyFlash   string    // flash message shown briefly after notification
+	notifyFlashAt time.Time // when the flash was set
+
 	// Log view state
 	logEntries   []logs.LogEntry
 	logFiltered  []logs.LogEntry
@@ -73,6 +79,7 @@ func NewModel(version string) Model {
 		version:       version,
 		prevStatus:    make(map[string]string),
 		doneHighlight: make(map[string]time.Time),
+		notifyEnabled: notify.Available(),
 	}
 }
 
@@ -80,6 +87,17 @@ func NewModel(version string) Model {
 func (m Model) isDone(sessionID string) bool {
 	expiry, ok := m.doneHighlight[sessionID]
 	return ok && time.Now().Before(expiry)
+}
+
+// activeFlash returns the notification flash message if still visible (3 seconds).
+func (m Model) activeFlash() string {
+	if m.notifyFlash == "" {
+		return ""
+	}
+	if time.Since(m.notifyFlashAt) > 3*time.Second {
+		return ""
+	}
+	return m.notifyFlash
 }
 
 // tickMsg triggers a data refresh.
@@ -150,15 +168,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.rows[i].PID < m.rows[j].PID
 			})
 
-			// Detect sessions that transitioned from ACTIVE to IDLE/DEAD
+			// Detect sessions that transitioned from ACTIVE/WAITING to IDLE/DEAD
 			now := time.Now()
 			curStatus := make(map[string]string, len(m.rows))
 			for _, r := range m.rows {
 				curStatus[r.SessionID] = string(r.Status)
 				prev, hasPrev := m.prevStatus[r.SessionID]
-				if hasPrev && prev == string(display.StatusActive) &&
-					(r.Status == display.StatusIdle || r.Status == display.StatusDead) {
+				wasActive := prev == string(display.StatusActive) || prev == string(display.StatusWaiting)
+				nowDone := r.Status == display.StatusIdle || r.Status == display.StatusDead
+				if hasPrev && wasActive && nowDone {
 					m.doneHighlight[r.SessionID] = now.Add(30 * time.Second)
+					// Send desktop notification
+					if m.notifyEnabled {
+						dir := r.Cwd
+						if dir == "" {
+							dir = r.SessionID
+						}
+						_ = notify.Send("c9e \u2014 Task Complete", dir+" \u2014 session finished")
+						m.notifyFlash = "\U0001f514 Notified: " + dir
+						m.notifyFlashAt = now
+					}
 				}
 			}
 			// Prune expired highlights
@@ -289,6 +318,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if cmd := m.openLogs(viewList); cmd != nil {
 				return m, cmd
 			}
+		case "n":
+			m.notifyEnabled = !m.notifyEnabled
 		case "?":
 			// Could show help modal — for now just cycle
 		}
