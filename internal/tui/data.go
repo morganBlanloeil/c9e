@@ -3,6 +3,7 @@ package tui
 import (
 	"time"
 
+	"github.com/wescale/claude-dashboard/internal/cost"
 	"github.com/wescale/claude-dashboard/internal/display"
 	"github.com/wescale/claude-dashboard/internal/history"
 	"github.com/wescale/claude-dashboard/internal/logs"
@@ -69,6 +70,23 @@ func fetchRows() ([]display.Row, error) {
 			sid = sid[:8]
 		}
 
+		// Estimate cost from session log
+		var costStr string
+		var costValue float64
+		var inputTokens, outputTokens int64
+		var costModel string
+		var hasUsageData bool
+		if logPath != "" {
+			if c, err := cost.EstimateFromLog(logPath); err == nil {
+				costValue = c.EstimatedCost
+				costStr = cost.Format(c.EstimatedCost)
+				inputTokens = c.InputTokens
+				outputTokens = c.OutputTokens
+				costModel = c.Model
+				hasUsageData = c.HasUsageData
+			}
+		}
+
 		rows = append(rows, display.Row{
 			PID:           s.PID,
 			SessionID:     sid,
@@ -83,6 +101,12 @@ func fetchRows() ([]display.Row, error) {
 			LastAction:    lastAction,
 			Alive:         alive,
 			LogPath:       logPath,
+			Cost:          costStr,
+			CostValue:     costValue,
+			InputTokens:   inputTokens,
+			OutputTokens:  outputTokens,
+			CostModel:     costModel,
+			HasUsageData:  hasUsageData,
 		})
 	}
 
