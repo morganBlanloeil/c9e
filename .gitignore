@@ -3,3 +3,6 @@ dist/
 .claude/logs/
 .claude/.last-doc-update
 .claude/.skip-doc-update
+.claude/scripts/
+.claude/worktrees/
+/claude-dashboard
