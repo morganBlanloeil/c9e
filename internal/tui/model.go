@@ -15,7 +15,6 @@ import (
 	"github.com/wescale/claude-dashboard/internal/logs"
 	"github.com/wescale/claude-dashboard/internal/notify"
 	"github.com/wescale/claude-dashboard/internal/process"
-	"github.com/wescale/claude-dashboard/internal/terminal"
 )
 
 // SortColumn identifies which column to sort by.
@@ -77,9 +76,6 @@ type Model struct {
 	clipboardFlash    string
 	clipboardFlashEnd time.Time
 
-	// Jump-to-terminal
-	jumpAvailable bool
-
 	// Log view state
 	logEntries   []logs.LogEntry
 	logFiltered  []logs.LogEntry
@@ -108,18 +104,6 @@ type killMsg struct {
 // clipboardFlashMsg clears the clipboard flash message.
 type clipboardFlashMsg struct{}
 
-// jumpMsg is sent after a jump-to-terminal attempt.
-type jumpMsg struct {
-	err error
-}
-
-func jumpCmd(pid int) tea.Cmd {
-	return func() tea.Msg {
-		err := terminal.JumpTo(pid)
-		return jumpMsg{err: err}
-	}
-}
-
 // copyToClipboard copies text to system clipboard.
 func copyToClipboard(text string) error {
 	var cmd *exec.Cmd
@@ -144,7 +128,7 @@ func NewModel(version string) Model {
 		prevStatus:    make(map[string]string),
 		doneHighlight: make(map[string]time.Time),
 		notifyEnabled: notify.Available(),
-		jumpAvailable: terminal.Available(),
+
 	}
 }
 
@@ -284,17 +268,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-	case jumpMsg:
-		if msg.err != nil {
-			m.clipboardFlash = fmt.Sprintf("Jump failed: %v", msg.err)
-		} else {
-			m.clipboardFlash = "Jumped to terminal"
-		}
-		m.clipboardFlashEnd = time.Now().Add(2 * time.Second)
-		return m, tea.Tick(2*time.Second, func(_ time.Time) tea.Msg {
-			return clipboardFlashMsg{}
-		})
-
 	case killMsg:
 		if msg.err != nil {
 			m.err = msg.err
@@ -419,12 +392,6 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					})
 				}
 			}
-		case "o":
-			if m.jumpAvailable {
-				if r := m.selectedRow(); r != nil && r.Alive {
-					return m, jumpCmd(r.PID)
-				}
-			}
 		case "?":
 			// Could show help modal — for now just cycle
 		}
@@ -438,12 +405,6 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "l":
 			if cmd := m.openLogs(viewDetail); cmd != nil {
 				return m, cmd
-			}
-		case "o":
-			if m.jumpAvailable {
-				if r := m.selectedRow(); r != nil && r.Alive {
-					return m, jumpCmd(r.PID)
-				}
 			}
 		}
 

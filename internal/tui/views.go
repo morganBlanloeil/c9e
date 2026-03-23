@@ -163,11 +163,7 @@ func (m Model) viewList() string {
 		if m.notifyEnabled {
 			notifyState = notifyOnStyle.Render("ON")
 		}
-		jumpHelp := ""
-		if m.jumpAvailable {
-			jumpHelp = "  o: jump"
-		}
-		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  s/S: sort  c: copy cwd%s  n: notify %s  q: quit", jumpHelp, notifyState)
+		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  s/S: sort  c: copy cwd  n: notify %s  q: quit", notifyState)
 		b.WriteString(helpStyle.Render(help))
 	}
 
@@ -269,11 +265,7 @@ func (m Model) viewDetail() string {
 
 	// Footer
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
-	detailJumpHelp := ""
-	if m.jumpAvailable {
-		detailJumpHelp = "  o: jump"
-	}
-	b.WriteString(helpStyle.Render(fmt.Sprintf("  esc/q: back to list  l: logs%s  ctrl+c: quit", detailJumpHelp)))
+	b.WriteString(helpStyle.Render("  esc/q: back to list  l: logs  ctrl+c: quit"))
 
 	return b.String()
 }
