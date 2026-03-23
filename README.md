@@ -10,8 +10,15 @@ A terminal dashboard for monitoring running Claude Code instances — like [k9s]
 
 - **Interactive TUI** — navigate sessions with keyboard shortcuts (j/k, enter, /)
 - **Live refresh** — auto-updates every 3 seconds
-- **Session detail** — drill into any session to see full metadata
+- **Session detail** — drill into any session to see full metadata, token counts, and cost
+- **Log tail** — stream a session's conversation log in real time (follow mode, thinking toggle)
 - **Kill sessions** — terminate idle or stuck sessions with confirmation
+- **Jump to terminal** — switch focus to a session's terminal pane (`o` key, supports tmux, iTerm2, Ghostty, Terminal.app)
+- **Done-row highlight** — when a session finishes, the row gets a golden highlight for 30 seconds
+- **Desktop notifications** — get notified when a session completes (toggle with `n`)
+- **Column sorting** — cycle sort column (`s`) and toggle direction (`S`)
+- **Cost tracking** — per-session cost estimates with color coding (green/yellow/red)
+- **Copy CWD** — copy a session's working directory to clipboard (`c`)
 - **Filter** — search by directory, status, or last action
 - **Column sorting** — sort by any column with ascending/descending toggle
 - **Log tail view** — stream conversation logs with follow mode and thinking toggle
@@ -115,7 +122,12 @@ If stdout is not a TTY (e.g., piped), the dashboard automatically falls back to 
 | `enter` | Drill into session detail |
 | `esc` / `q` | Clear filter / quit |
 | `d` | Kill selected session (with confirmation) |
+| `l` | Open log tail for selected session |
+| `o` | Jump to session's terminal pane (tmux/iTerm2/Ghostty/Terminal.app) |
 | `/` | Filter by directory, status, or action |
+| `s` / `S` | Cycle sort column / toggle sort direction |
+| `c` | Copy selected session's working directory to clipboard |
+| `n` | Toggle desktop notifications |
 | `g` / `G` | Jump to first / last |
 | `s` | Cycle sort column (PID, STATUS, CPU%, MEM%, UPTIME, IDLE, DIR, ACTION, TURNS) |
 | `S` | Toggle sort direction (ascending / descending) |
@@ -167,7 +179,7 @@ The dashboard reads from Claude Code's local state files:
 |--------|------|
 | `~/.claude/sessions/*.json` | Session metadata (PID, working directory, start time) |
 | `~/.claude/history.jsonl` | User action log (last message per session) |
-| `~/.claude/projects/{slug}/{sessionID}.jsonl` | Full conversation logs (turns, cost, log tail) |
+| `~/.claude/projects/{slug}/{sessionID}.jsonl` | Full conversation logs (turns, cost, token usage, log tail) |
 | `ps aux` | Live process stats (CPU, memory, alive check) |
 
 > **Note:** These are undocumented Claude Code internal files and may change between versions.
@@ -180,6 +192,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on the tech stack and how to 
 mise run build     # Build to dist/
 mise run test      # Run tests
 mise run install   # Build + install to ~/.claude/bin
+mise run dev       # Run locally with go run
 mise run clean     # Remove build artifacts
 ```
 

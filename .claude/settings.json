@@ -9,16 +9,10 @@
             "command": "jq -r '.tool_input.command' | grep -q 'git commit' && go build ./... || true",
             "timeout": 30,
             "statusMessage": "Checking Go compilation..."
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
+          },
           {
             "type": "command",
-            "command": "bash .claude/scripts/update-docs.sh",
+            "command": "jq -r '.tool_input.command' | grep -q 'git commit' && bash .claude/scripts/update-docs.sh || true",
             "timeout": 180,
             "statusMessage": "Updating project documentation..."
           }

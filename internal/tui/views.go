@@ -110,8 +110,11 @@ func (m Model) viewList() string {
 	for i := scrollOffset; i < len(m.filtered) && i < scrollOffset+visibleRows; i++ {
 		r := m.filtered[i]
 		line := m.renderRow(r)
-		if i == m.cursor {
+		switch {
+		case i == m.cursor:
 			line = selectedRowStyle.Render(line)
+		case m.isDone(r.SessionID):
+			line = doneRowStyle.Render(line)
 		}
 		b.WriteString(line + "\n")
 	}

@@ -128,6 +128,7 @@ func NewModel(version string) Model {
 		prevStatus:    make(map[string]string),
 		doneHighlight: make(map[string]time.Time),
 		notifyEnabled: notify.Available(),
+
 	}
 }
 

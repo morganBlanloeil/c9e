@@ -36,6 +36,10 @@ echo "Removed ${INSTALL_DIR}/${BINARY_NAME}"
 description = "Remove build artifacts"
 run = "rm -rf ${BUILD_DIR} ${BINARY_NAME}"
 
+[tasks.dev]
+description = "Run the dashboard locally with go run"
+run = "go run ./cmd/c9e/"
+
 [tasks.test]
 description = "Run tests"
 run = "go test ./..."
