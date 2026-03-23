@@ -110,8 +110,11 @@ func (m Model) viewList() string {
 	for i := scrollOffset; i < len(m.filtered) && i < scrollOffset+visibleRows; i++ {
 		r := m.filtered[i]
 		line := m.renderRow(r)
-		if i == m.cursor {
+		switch {
+		case i == m.cursor:
 			line = selectedRowStyle.Render(line)
+		case m.isDone(r.SessionID):
+			line = doneRowStyle.Render(line)
 		}
 		b.WriteString(line + "\n")
 	}
@@ -184,13 +187,15 @@ func (m Model) renderRow(r display.Row) string {
 	action := display.CleanAction(truncate(r.LastAction, 50))
 	turns := fmt.Sprintf("%5d", r.Turns)
 
-	costStr := "—"
+	costStr := fmt.Sprintf("%8s", "—")
 	if r.Cost != "" {
 		costStr = styledCost(r.CostValue).Render(fmt.Sprintf("%8s", r.Cost))
 	}
 
-	return fmt.Sprintf("  %s %-6d  %s  %s  %5s  %5s  %s  %-10s  %-9s  %-40s  %s",
-		icon, r.PID, status, turns, r.CPU, r.Mem, costStr, uptime, idle, dimStyle.Render(cwd), action)
+	cwdPadded := fmt.Sprintf("%-40s", cwd)
+
+	return fmt.Sprintf("  %s %-6d  %s  %s  %5s  %5s  %s  %-10s  %-9s  %s  %s",
+		icon, r.PID, status, turns, r.CPU, r.Mem, costStr, uptime, idle, dimStyle.Render(cwdPadded), action)
 }
 
 func (m Model) viewDetail() string {

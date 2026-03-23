@@ -34,7 +34,7 @@ fi
 mkdir -p .claude/logs
 
 # Run Claude to update docs (timeout 120s, print mode, no interaction)
-timeout 120 claude -p \
+claude -p \
   --allowedTools "Read,Edit,Glob,Grep,Bash" \
   "You are a documentation updater for the c9e project (a Claude Code monitoring TUI dashboard).
 

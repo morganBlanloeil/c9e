@@ -18,6 +18,9 @@ var (
 	selectedBg = lipgloss.AdaptiveColor{Light: "#D0D0D0", Dark: "#303030"}
 	selectedFg = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
 
+	doneBg = lipgloss.AdaptiveColor{Light: "#FFF3E0", Dark: "#3D2800"}
+	doneFg = lipgloss.AdaptiveColor{Light: "#CC6600", Dark: "#FFD080"}
+
 	// Title bar
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -41,6 +44,12 @@ var (
 				Foreground(selectedFg)
 
 	normalRowStyle = lipgloss.NewStyle()
+
+	// Done row highlight — full-row background for recently finished sessions
+	doneRowStyle = lipgloss.NewStyle().
+			Background(doneBg).
+			Foreground(doneFg).
+			Bold(true)
 
 	// Status badges
 	activeBadge  = lipgloss.NewStyle().Foreground(green).Bold(true)

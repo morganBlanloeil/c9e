@@ -3,7 +3,9 @@ package terminal
 import (
 	"os"
 	"os/exec"
-	"sync"
+	"runtime"
+	"strconv"
+	"strings"
 )
 
 type backend int
@@ -13,62 +15,77 @@ const (
 	backendTmux
 	backendITerm2
 	backendTerminalApp
+	backendGhostty
 )
 
-var (
-	detectedBackend backend
-	detectOnce      sync.Once
-)
-
-func detect() backend {
-	// 1. tmux
+// Available returns true if jump-to-terminal is potentially possible.
+func Available() bool {
+	// tmux
 	if os.Getenv("TMUX") != "" {
 		if _, err := exec.LookPath("tmux"); err == nil {
-			return backendTmux
+			return true
 		}
 	}
 
-	termProgram := os.Getenv("TERM_PROGRAM")
-	hasOsascript := false
-	if _, err := exec.LookPath("osascript"); err == nil {
-		hasOsascript = true
+	// macOS: any of the supported terminals can be detected per-PID
+	if runtime.GOOS == "darwin" {
+		if _, err := exec.LookPath("osascript"); err == nil {
+			return true
+		}
 	}
 
-	// 2. iTerm2
-	if termProgram == "iTerm.app" && hasOsascript {
-		return backendITerm2
-	}
-
-	// 3. Terminal.app
-	if termProgram == "Apple_Terminal" && hasOsascript {
-		return backendTerminalApp
-	}
-
-	return backendNone
+	return false
 }
 
-// Available returns true if the current terminal supports jump-to-pane.
-func Available() bool {
-	detectOnce.Do(func() {
-		detectedBackend = detect()
-	})
-	return detectedBackend != backendNone
-}
-
-// JumpTo switches focus to the terminal pane/tab running the given PID.
+// JumpTo detects the terminal hosting the given PID and switches focus to it.
 func JumpTo(pid int) error {
-	detectOnce.Do(func() {
-		detectedBackend = detect()
-	})
+	be := detectForPID(pid)
 
-	switch detectedBackend {
+	switch be {
 	case backendTmux:
 		return jumpTmux(pid)
 	case backendITerm2:
 		return jumpDarwin(pid, backendITerm2)
 	case backendTerminalApp:
 		return jumpDarwin(pid, backendTerminalApp)
+	case backendGhostty:
+		return jumpGhostty(pid)
 	default:
 		return nil
 	}
+}
+
+// detectForPID walks the ancestor chain of a PID to find which terminal hosts it.
+func detectForPID(pid int) backend {
+	ancestors, err := Ancestors(pid)
+	if err != nil {
+		return backendNone
+	}
+
+	candidates := append([]int{pid}, ancestors...)
+	for _, cpid := range candidates {
+		comm := getComm(cpid)
+		commLower := strings.ToLower(comm)
+		switch {
+		case strings.Contains(commLower, "ghostty"):
+			return backendGhostty
+		case strings.Contains(commLower, "iterm"):
+			return backendITerm2
+		case commLower == "terminal" || strings.HasSuffix(commLower, "/terminal"):
+			return backendTerminalApp
+		case strings.Contains(commLower, "tmux"):
+			return backendTmux
+		}
+	}
+
+	return backendNone
+}
+
+// getComm returns the command name for a PID.
+func getComm(pid int) string {
+	out, err := exec.Command("ps", "-o", "comm=", "-p", strconv.Itoa(pid)).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
