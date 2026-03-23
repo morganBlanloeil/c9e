@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.1](https://github.com/morganBlanloeil/c9e/compare/v1.3.0...v1.3.1) (2026-03-23)
+
+
+### Bug Fixes
+
+* pre-pad column values before ANSI styling to fix TUI alignment ([58093a9](https://github.com/morganBlanloeil/c9e/commit/58093a954a6e4c25b7346f8f4389bdcde8b929b6))
+
+
+### Documentation
+
+* update README with missing features and mise install ([#20](https://github.com/morganBlanloeil/c9e/issues/20)) ([4248320](https://github.com/morganBlanloeil/c9e/commit/424832035406cc68d3a2b2f631d84baa719f9634))
+
 ## [1.3.0](https://github.com/morganBlanloeil/c9e/compare/v1.2.1...v1.3.0) (2026-03-20)
 
 
