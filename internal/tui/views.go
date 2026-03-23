@@ -181,9 +181,9 @@ func (m Model) renderRow(r display.Row) string {
 		icon = doneBadge.Render("★")
 		status = doneBadge.Render(fmt.Sprintf("%-8s", "DONE"))
 	}
-	uptime := formatDuration(r.UptimeSec)
-	idle := formatIdle(r.IdleSec)
-	cwd := truncate(filepath.Base(r.Cwd), 40)
+	uptime := fmt.Sprintf("%-10s", formatDuration(r.UptimeSec))
+	idle := fmt.Sprintf("%-9s", formatIdle(r.IdleSec))
+	cwd := fmt.Sprintf("%-40s", truncate(filepath.Base(r.Cwd), 40))
 	action := display.CleanAction(truncate(r.LastAction, 50))
 	turns := fmt.Sprintf("%5d", r.Turns)
 
@@ -192,10 +192,11 @@ func (m Model) renderRow(r display.Row) string {
 		costStr = styledCost(r.CostValue).Render(fmt.Sprintf("%8s", r.Cost))
 	}
 
-	cwdPadded := fmt.Sprintf("%-40s", cwd)
-
-	return fmt.Sprintf("  %s %-6d  %s  %s  %5s  %5s  %s  %-10s  %-9s  %s  %s",
-		icon, r.PID, status, turns, r.CPU, r.Mem, costStr, uptime, idle, dimStyle.Render(cwdPadded), action)
+	// Build row by concatenating styled strings with literal spacing.
+	// Using fmt.Sprintf width specifiers on ANSI-styled strings breaks alignment
+	// because Go counts invisible escape codes as part of the string width.
+	return fmt.Sprintf("  %s %-6d  %s  %s  %5s  %5s  %s  %s  %s  %s  %s",
+		icon, r.PID, status, turns, r.CPU, r.Mem, costStr, uptime, idle, dimStyle.Render(cwd), action)
 }
 
 func (m Model) viewDetail() string {
