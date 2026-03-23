@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Post-session hook: update project documentation using Claude CLI
-# Runs at the end of each Claude Code session in this project
+# Pre-commit hook: update project documentation using Claude CLI
+# Runs before each git commit via Claude Code PreToolUse hook
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -33,26 +33,14 @@ fi
 # Ensure log directory exists
 mkdir -p .claude/logs
 
-# Run Claude to update docs (timeout 120s, print mode, no interaction)
-claude -p \
-  --allowedTools "Read,Edit,Glob,Grep,Bash" \
-  "You are a documentation updater for the c9e project (a Claude Code monitoring TUI dashboard).
+# Build prompt as a variable to avoid multiline argument issues
+PROMPT="You are a documentation updater for the c9e project (a Claude Code monitoring TUI dashboard). Read the current source code and update README.md and CONTRIBUTING.md to accurately reflect the current state of the codebase. Specifically check and update: 1) README.md: features list, TUI keyboard shortcuts table, columns table, data sources table. 2) CONTRIBUTING.md: project structure tree, architecture description, data sources documentation. Rules: Only make changes if the docs are actually out of date. Keep the same markdown style and structure. Do NOT add or remove sections, only update existing content. Do NOT modify badges, installation instructions, or release info. Be conservative: if unsure, don't change it. Read the key source files: cmd/c9e/main.go, internal/tui/model.go, internal/tui/views.go, internal/display/display.go, internal/tui/data.go"
 
-Read the current source code and update README.md and CONTRIBUTING.md to accurately reflect the current state of the codebase. Specifically check and update:
-
-1. **README.md**: features list, TUI keyboard shortcuts table, columns table, data sources table
-2. **CONTRIBUTING.md**: project structure tree, architecture description, data sources documentation
-
-Rules:
-- Only make changes if the docs are actually out of date
-- Keep the same markdown style and structure
-- Do NOT add or remove sections, only update existing content
-- Do NOT modify badges, installation instructions, or release info
-- Be conservative: if unsure, don't change it
-- Read the key source files: cmd/c9e/main.go, internal/tui/model.go, internal/tui/views.go, internal/display/display.go, internal/tui/data.go" \
-  >> .claude/logs/update-docs.log 2>&1 || true
-
-# Update marker on completion
-echo "${CURRENT_HASH}" > "${MARKER_FILE}"
+# Run Claude to update docs (print mode, no interaction)
+if claude -p --allowedTools "Read,Edit,Glob,Grep,Bash" "${PROMPT}" \
+  >> .claude/logs/update-docs.log 2>&1; then
+  # Update marker only on success
+  echo "${CURRENT_HASH}" > "${MARKER_FILE}"
+fi
 
 exit 0

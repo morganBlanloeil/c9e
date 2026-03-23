@@ -18,19 +18,27 @@ c9e/
 ├── cmd/c9e/
 │   └── main.go              # CLI entry point, flags, modes
 ├── internal/
+│   ├── cost/
+│   │   └── cost.go          # Per-session cost estimation from conversation logs
 │   ├── display/
 │   │   └── display.go       # Static table + JSON rendering (--table, --json)
 │   ├── history/
 │   │   └── history.go       # Reads ~/.claude/history.jsonl
+│   ├── logs/
+│   │   └── logs.go          # Reads session JSONL conversation logs (log tail, turns, roles)
+│   ├── notify/
+│   │   └── notify.go        # Desktop notifications (macOS/Linux)
 │   ├── process/
 │   │   └── process.go       # Lists Claude processes via ps, kill support
 │   ├── session/
 │   │   └── session.go       # Reads ~/.claude/sessions/*.json
+│   ├── terminal/
+│   │   └── terminal.go      # Jump-to-terminal (tmux, iTerm2, Ghostty, Terminal.app)
 │   └── tui/
 │       ├── model.go          # Bubbletea model, key handling, state
-│       ├── views.go          # List view + detail view rendering
+│       ├── views.go          # List view, detail view, log tail rendering
 │       ├── styles.go         # Lipgloss styles (adaptive light/dark)
-│       └── data.go           # Data fetching (aggregates session/history/process)
+│       └── data.go           # Data fetching (aggregates session/history/process/logs/cost)
 ├── mise.toml                 # Build tasks and Go version
 ├── go.mod
 └── .gitignore
@@ -40,12 +48,14 @@ c9e/
 
 The project follows a clear separation:
 
-- **`internal/session`**, **`internal/history`**, **`internal/process`** — data layer, each reads from one source
+- **`internal/session`**, **`internal/history`**, **`internal/process`**, **`internal/logs`**, **`internal/cost`** — data layer, each reads from one source
+- **`internal/terminal`** — jump-to-terminal support (tmux, iTerm2, Ghostty, Terminal.app)
+- **`internal/notify`** — desktop notifications when sessions complete
 - **`internal/display`** — static output rendering (table, JSON)
-- **`internal/tui`** — interactive TUI using bubbletea's Model-View-Update pattern
+- **`internal/tui`** — interactive TUI using bubbletea's Model-View-Update pattern (list, detail, and log tail views)
 - **`cmd/c9e`** — CLI entry point, flag parsing, mode selection
 
-Data flows: `session + history + process` -> `display.Row` -> `tui` or `display`
+Data flows: `session + history + process + logs + cost` -> `display.Row` -> `tui` or `display`
 
 ## Development commands
 
@@ -55,6 +65,7 @@ All commands use mise:
 mise run build      # Compile to dist/c9e
 mise run install    # Build + copy to ~/.claude/bin/
 mise run test       # Run go test ./...
+mise run dev        # Run the dashboard locally with go run
 mise run clean      # Remove dist/ and build artifacts
 mise run uninstall  # Remove binary from ~/.claude/bin/
 ```
@@ -145,14 +156,28 @@ A process is identified as a Claude Code CLI instance if:
 
 **Code:** `internal/process/process.go`
 
+#### Conversation logs — `~/.claude/projects/{slug}/{sessionID}.jsonl`
+
+Each session's full conversation is stored as a JSONL file under `~/.claude/projects/`. The directory slug is derived from the session's working directory (with `/` and `.` replaced by `-`). These logs contain user messages, assistant responses, tool use, and thinking blocks.
+
+The dashboard uses conversation logs for:
+
+- **Turn count** — number of user messages in the session
+- **Cost estimation** — token usage data is extracted to estimate per-session cost
+- **WAITING status** — if the last log entry's role is "assistant", the session is marked as waiting for user input
+- **Log tail view** — streams the conversation log with follow mode and thinking toggle
+
+**Code:** `internal/logs/logs.go`, `internal/cost/cost.go`
+
 #### How it all connects
 
 ```
 sessions/*.json ──(pid)──→ ps aux        → alive? cpu? mem?
                  ──(sessionId)──→ history.jsonl → last action? idle time?
+                 ──(sessionId+cwd)──→ projects/{slug}/{sessionID}.jsonl → turns, cost, tokens, log tail
 ```
 
-The `sessionId` is the join key between session files and history. The `pid` is used to match against running processes.
+The `sessionId` is the join key between session files, history, and conversation logs. The `pid` is used to match against running processes.
 
 ### Adding a new column
 
