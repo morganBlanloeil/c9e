@@ -170,7 +170,7 @@ The dashboard reads from Claude Code's local state files:
 | `~/.claude/sessions/*.json` | Session metadata (PID, working directory, start time) |
 | `~/.claude/history.jsonl` | User action log (last message per session) |
 | `~/.claude/projects/{slug}/{sessionID}.jsonl` | Full conversation logs (turns, cost, token usage, log tail) |
-| `ps aux` | Live process stats (CPU, memory, alive check) |
+| `ps -eo pid,ppid,%cpu,%mem,args` | Live process stats (CPU, memory, alive check, process tree) |
 
 > **Note:** These are undocumented Claude Code internal files and may change between versions.
 
