@@ -33,7 +33,7 @@ c9e/
 │   ├── session/
 │   │   └── session.go       # Reads ~/.claude/sessions/*.json
 │   ├── terminal/
-│   │   └── terminal.go      # Jump-to-terminal (tmux, iTerm2, Ghostty, Terminal.app)
+│   │   └── ghostty.go       # Jump-to-terminal (Ghostty only, via AppleScript)
 │   └── tui/
 │       ├── model.go          # Bubbletea model, key handling, state
 │       ├── views.go          # List view, detail view, log tail rendering
@@ -49,7 +49,7 @@ c9e/
 The project follows a clear separation:
 
 - **`internal/session`**, **`internal/history`**, **`internal/process`**, **`internal/logs`**, **`internal/cost`** — data layer, each reads from one source
-- **`internal/terminal`** — jump-to-terminal support (tmux, iTerm2, Ghostty, Terminal.app)
+- **`internal/terminal`** — jump-to-terminal support (Ghostty only, via AppleScript)
 - **`internal/notify`** — desktop notifications when sessions complete
 - **`internal/display`** — static output rendering (table, JSON)
 - **`internal/tui`** — interactive TUI using bubbletea's Model-View-Update pattern (list, detail, and log tail views)
