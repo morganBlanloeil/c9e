@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/wescale/claude-dashboard/internal/cost"
@@ -11,21 +12,23 @@ import (
 	"github.com/wescale/claude-dashboard/internal/session"
 )
 
+const roleAssistant = "assistant"
+
 // fetchRows collects all session data and returns display rows.
 func fetchRows() ([]display.Row, error) {
 	sessions, err := session.LoadAll()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading sessions: %w", err)
 	}
 
 	actions, err := history.LastActions()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading history: %w", err)
 	}
 
 	procs, err := process.ListClaude()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing processes: %w", err)
 	}
 
 	nowMs := time.Now().UnixMilli()
@@ -42,32 +45,33 @@ func fetchRows() ([]display.Row, error) {
 
 		uptimeSec := int64(0)
 		if s.StartedAt > 0 {
-			uptimeSec = (nowMs - s.StartedAt) / 1000
+			uptimeSec = (nowMs - s.StartedAt) / msPerSecond
 		}
 
 		idleSec := int64(-1)
-		lastAction := "—"
+		lastAction := emDash
 		if action, ok := actions[s.SessionID]; ok {
 			lastAction = action.Display
 			if action.Timestamp > 0 {
-				idleSec = (nowMs - action.Timestamp) / 1000
+				idleSec = (nowMs - action.Timestamp) / msPerSecond
 			}
 		}
 
 		logPath := logs.ResolvePath(s.SessionID, s.Cwd)
 
 		status := display.StatusActive
-		if !alive {
+		switch {
+		case !alive:
 			status = display.StatusDead
-		} else if idleSec > int64(display.IdleThreshold.Seconds()) {
+		case idleSec > int64(display.IdleThreshold.Seconds()):
 			status = display.StatusIdle
-		} else if logPath != "" && logs.LastRole(logPath) == "assistant" {
+		case logPath != "" && logs.LastRole(logPath) == roleAssistant:
 			status = display.StatusWaiting
 		}
 
 		sid := s.SessionID
-		if len(sid) > 8 {
-			sid = sid[:8]
+		if len(sid) > sessionIDLen {
+			sid = sid[:sessionIDLen]
 		}
 
 		// Count conversation turns

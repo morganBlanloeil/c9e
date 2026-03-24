@@ -2,6 +2,7 @@ package process
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -16,9 +17,18 @@ type Info struct {
 	Alive bool
 }
 
+// ps aux field layout constants.
+const (
+	psMinFields = 11 // minimum fields in a ps aux line
+	psCmdIndex  = 10 // index where command string starts
+	psPIDIndex  = 1
+	psCPUIndex  = 2
+	psMemIndex  = 3
+)
+
 // ListClaude returns process info for all running Claude Code CLI instances.
 func ListClaude() (map[int]Info, error) {
-	cmd := exec.Command("ps", "aux")
+	cmd := exec.CommandContext(context.Background(), "ps", "aux")
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("ps aux failed: %w", err)
@@ -34,24 +44,24 @@ func ListClaude() (map[int]Info, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Fields(line)
-		if len(fields) < 11 {
+		if len(fields) < psMinFields {
 			continue
 		}
 
-		cmdStr := strings.Join(fields[10:], " ")
+		cmdStr := strings.Join(fields[psCmdIndex:], " ")
 		if !isClaudeCodeCLI(cmdStr) {
 			continue
 		}
 
-		pid, err := strconv.Atoi(fields[1])
+		pid, err := strconv.Atoi(fields[psPIDIndex])
 		if err != nil {
 			continue
 		}
 
 		result[pid] = Info{
 			PID:   pid,
-			CPU:   fields[2],
-			Mem:   fields[3],
+			CPU:   fields[psCPUIndex],
+			Mem:   fields[psMemIndex],
 			Alive: true,
 		}
 	}
@@ -61,7 +71,7 @@ func ListClaude() (map[int]Info, error) {
 
 // Kill sends SIGTERM to a process.
 func Kill(pid int) error {
-	cmd := exec.Command("kill", strconv.Itoa(pid))
+	cmd := exec.CommandContext(context.Background(), "kill", strconv.Itoa(pid))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to kill PID %d: %w", pid, err)
 	}
@@ -70,7 +80,7 @@ func Kill(pid int) error {
 
 // IsAlive checks if a specific PID is a running process.
 func IsAlive(pid int) bool {
-	cmd := exec.Command("kill", "-0", strconv.Itoa(pid))
+	cmd := exec.CommandContext(context.Background(), "kill", "-0", strconv.Itoa(pid))
 	return cmd.Run() == nil
 }
 

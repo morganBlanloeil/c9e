@@ -3,6 +3,7 @@ package history
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,7 +19,7 @@ type Entry struct {
 
 // LastActions returns the most recent action per session ID.
 // It reads the tail of the history file for performance.
-func LastActions() (map[string]Entry, error) {
+func LastActions() (result map[string]Entry, err error) {
 	path, err := historyPath()
 	if err != nil {
 		return nil, err
@@ -29,24 +30,28 @@ func LastActions() (map[string]Entry, error) {
 		if os.IsNotExist(err) {
 			return make(map[string]Entry), nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("opening history file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	// Seek to last 512KB for performance
 	info, err := f.Stat()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading history file info: %w", err)
 	}
 	const tailSize = 512 * 1024
 	if info.Size() > tailSize {
 		if _, err := f.Seek(-tailSize, io.SeekEnd); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("seeking history file: %w", err)
 		}
 		// Skip partial first line
 		reader := bufio.NewReader(f)
 		if _, err := reader.ReadString('\n'); err != nil && err != io.EOF {
-			return nil, err
+			return nil, fmt.Errorf("reading history file: %w", err)
 		}
 		return scanEntries(reader)
 	}
@@ -57,7 +62,8 @@ func LastActions() (map[string]Entry, error) {
 func scanEntries(r *bufio.Reader) (map[string]Entry, error) {
 	result := make(map[string]Entry)
 	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 256*1024), 256*1024)
+	const scannerBufSize = 256 * 1024
+	scanner.Buffer(make([]byte, scannerBufSize), scannerBufSize)
 
 	for scanner.Scan() {
 		var e Entry
@@ -72,13 +78,16 @@ func scanEntries(r *bufio.Reader) (map[string]Entry, error) {
 			result[e.SessionID] = e
 		}
 	}
-	return result, scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return result, fmt.Errorf("scanning history entries: %w", err)
+	}
+	return result, nil
 }
 
 func historyPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("resolving home directory: %w", err)
 	}
 	return filepath.Join(home, ".claude", "history.jsonl"), nil
 }

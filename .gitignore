@@ -1,7 +1,24 @@
-dist/
-/c9e
 .claude/logs/
 .claude/.last-doc-update
 .claude/.skip-doc-update
 .claude/worktrees/
 /claude-dashboard
+
+
+# Go build artifacts
+/dist/
+c9e
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE / editor files
+.idea/
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db

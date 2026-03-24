@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+const darwinOS = "darwin"
+
 func TestBuildCommand(t *testing.T) {
 	cmd := BuildCommand("c9e — Task Complete", "my-project — session finished")
 
@@ -48,7 +50,7 @@ func TestBuildCommandEscaping(t *testing.T) {
 
 func TestAvailable(t *testing.T) {
 	result := Available()
-	if runtime.GOOS == "darwin" {
+	if runtime.GOOS == darwinOS {
 		// On macOS, osascript should be available
 		if !result {
 			t.Log("osascript not found on macOS — unexpected but not fatal in CI")

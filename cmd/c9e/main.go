@@ -113,6 +113,12 @@ func main() {
 	}
 }
 
+const (
+	msPerSecond       = 1000
+	sessionIDShortLen = 8
+	emDash            = "—"
+)
+
 func runStatic(jsonOutput bool) error {
 	sessions, err := session.LoadAll()
 	if err != nil {
@@ -147,26 +153,27 @@ func runStatic(jsonOutput bool) error {
 
 		uptimeSec := int64(0)
 		if s.StartedAt > 0 {
-			uptimeSec = (nowMs - s.StartedAt) / 1000
+			uptimeSec = (nowMs - s.StartedAt) / msPerSecond
 		}
 
 		idleSec := int64(-1)
-		lastAction := "—"
+		lastAction := emDash
 		if action, ok := actions[s.SessionID]; ok {
 			lastAction = action.Display
 			if action.Timestamp > 0 {
-				idleSec = (nowMs - action.Timestamp) / 1000
+				idleSec = (nowMs - action.Timestamp) / msPerSecond
 			}
 		}
 
 		logPath := logs.ResolvePath(s.SessionID, s.Cwd)
 
 		status := display.StatusActive
-		if !alive {
+		switch {
+		case !alive:
 			status = display.StatusDead
-		} else if idleSec > int64(display.IdleThreshold.Seconds()) {
+		case idleSec > int64(display.IdleThreshold.Seconds()):
 			status = display.StatusIdle
-		} else if logPath != "" && logs.LastRole(logPath) == "assistant" {
+		case logPath != "" && logs.LastRole(logPath) == "assistant":
 			status = display.StatusWaiting
 		}
 
@@ -194,24 +201,26 @@ func runStatic(jsonOutput bool) error {
 		}
 
 		rows = append(rows, display.Row{
-			PID:          s.PID,
-			SessionID:    s.SessionID[:8],
-			Status:       status,
-			CPU:          cpu,
-			Mem:          mem,
-			Cwd:          s.ShortCwd(),
-			UptimeSec:    uptimeSec,
-			IdleSec:      idleSec,
-			LastAction:   lastAction,
-			Alive:        alive,
-			LogPath:      logPath,
-			Turns:        turns,
-			Cost:         costStr,
-			CostValue:    costValue,
-			InputTokens:  inputTokens,
-			OutputTokens: outputTokens,
-			CostModel:    costModel,
-			HasUsageData: hasUsageData,
+			PID:           s.PID,
+			SessionID:     s.SessionID[:sessionIDShortLen],
+			FullSessionID: s.SessionID,
+			Status:        status,
+			CPU:           cpu,
+			Mem:           mem,
+			Cwd:           s.ShortCwd(),
+			RawCwd:        s.Cwd,
+			UptimeSec:     uptimeSec,
+			IdleSec:       idleSec,
+			LastAction:    lastAction,
+			Alive:         alive,
+			LogPath:       logPath,
+			Turns:         turns,
+			Cost:          costStr,
+			CostValue:     costValue,
+			InputTokens:   inputTokens,
+			OutputTokens:  outputTokens,
+			CostModel:     costModel,
+			HasUsageData:  hasUsageData,
 		})
 	}
 
@@ -220,7 +229,10 @@ func runStatic(jsonOutput bool) error {
 	})
 
 	if jsonOutput {
-		return display.RenderJSON(rows)
+		if err := display.RenderJSON(rows); err != nil {
+			return fmt.Errorf("rendering JSON: %w", err)
+		}
+		return nil
 	}
 	display.RenderTable(rows)
 	return nil

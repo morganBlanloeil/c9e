@@ -37,7 +37,7 @@ mkdir -p .claude/logs
 PROMPT="You are a documentation updater for the c9e project (a Claude Code monitoring TUI dashboard). Read the current source code and update README.md and CONTRIBUTING.md to accurately reflect the current state of the codebase. Specifically check and update: 1) README.md: features list, TUI keyboard shortcuts table, columns table, data sources table. 2) CONTRIBUTING.md: project structure tree, architecture description, data sources documentation. Rules: Only make changes if the docs are actually out of date. Keep the same markdown style and structure. Do NOT add or remove sections, only update existing content. Do NOT modify badges, installation instructions, or release info. Be conservative: if unsure, don't change it. Read the key source files: cmd/c9e/main.go, internal/tui/model.go, internal/tui/views.go, internal/display/display.go, internal/tui/data.go"
 
 # Run Claude to update docs (print mode, no interaction)
-if claude -p --allowedTools "Read,Edit,Glob,Grep,Bash" "${PROMPT}" \
+if claude --allowedTools "Read,Edit,Glob,Grep,Bash" -p "${PROMPT}" \
   >> .claude/logs/update-docs.log 2>&1; then
   # Update marker only on success
   echo "${CURRENT_HASH}" > "${MARKER_FILE}"

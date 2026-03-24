@@ -20,6 +20,17 @@ const (
 	ansiReset  = "\033[0m"
 )
 
+const (
+	emDash       = "—"
+	msPerSecond  = 1000
+	secsPerDay   = 86400
+	secsPerHour  = 3600
+	secsPerMin   = 60
+	sepWidth     = 107
+	maxCwdLen    = 40
+	maxActionLen = 50
+)
+
 // CleanAction removes newlines and carriage returns from a string.
 func CleanAction(s string) string {
 	s = strings.ReplaceAll(s, "\n", " ")
@@ -42,26 +53,26 @@ const IdleThreshold = 5 * time.Minute
 
 // Row represents a single dashboard row.
 type Row struct {
-	PID            int     `json:"pid"`
-	SessionID      string  `json:"session_id"`
-	FullSessionID  string  `json:"full_session_id"`
-	Status         Status  `json:"status"`
-	CPU            string  `json:"cpu"`
-	Mem            string  `json:"mem"`
-	Cwd            string  `json:"cwd"`
-	RawCwd         string  `json:"-"` // unexpanded cwd for log path resolution
-	UptimeSec      int64   `json:"uptime_s"`
-	IdleSec        int64   `json:"idle_s"`
-	LastAction     string  `json:"last_action"`
-	Alive          bool    `json:"alive"`
-	LogPath        string  `json:"log_path,omitempty"`
-	Turns          int     `json:"turns"`                 // conversation turn count (user messages)
-	Cost           string  `json:"cost"`                  // pre-formatted cost string
-	CostValue      float64 `json:"cost_value"`            // raw cost for sorting
-	InputTokens    int64   `json:"input_tokens,omitempty"`
-	OutputTokens   int64   `json:"output_tokens,omitempty"`
-	CostModel      string  `json:"cost_model,omitempty"`
-	HasUsageData   bool    `json:"has_usage_data"`
+	PID           int     `json:"pid"`
+	SessionID     string  `json:"session_id"`
+	FullSessionID string  `json:"full_session_id"`
+	Status        Status  `json:"status"`
+	CPU           string  `json:"cpu"`
+	Mem           string  `json:"mem"`
+	Cwd           string  `json:"cwd"`
+	RawCwd        string  `json:"-"` // unexpanded cwd for log path resolution
+	UptimeSec     int64   `json:"uptime_s"`
+	IdleSec       int64   `json:"idle_s"`
+	LastAction    string  `json:"last_action"`
+	Alive         bool    `json:"alive"`
+	LogPath       string  `json:"log_path,omitempty"`
+	Turns         int     `json:"turns"`      // conversation turn count (user messages)
+	Cost          string  `json:"cost"`       // pre-formatted cost string
+	CostValue     float64 `json:"cost_value"` // raw cost for sorting
+	InputTokens   int64   `json:"input_tokens,omitempty"`
+	OutputTokens  int64   `json:"output_tokens,omitempty"`
+	CostModel     string  `json:"cost_model,omitempty"`
+	HasUsageData  bool    `json:"has_usage_data"`
 }
 
 // RenderTable prints the dashboard table to stdout.
@@ -72,6 +83,8 @@ func RenderTable(rows []Row) {
 	for _, r := range rows {
 		switch r.Status {
 		case StatusActive:
+			activeCount++
+		case StatusWaiting:
 			activeCount++
 		case StatusIdle:
 			idleCount++
@@ -104,12 +117,12 @@ func RenderTable(rows []Row) {
 
 		uptime := formatDuration(r.UptimeSec)
 		idle := formatIdle(r.IdleSec)
-		cwd := truncate(filepath.Base(r.Cwd), 40)
-		action := CleanAction(truncate(r.LastAction, 50))
+		cwd := truncate(filepath.Base(r.Cwd), maxCwdLen)
+		action := CleanAction(truncate(r.LastAction, maxActionLen))
 
 		costStr := r.Cost
 		if costStr == "" {
-			costStr = "—"
+			costStr = emDash
 		}
 
 		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5d  %5s  %5s  %8s  %-10s  %-9s  %s%-40s%s  %s\n",
@@ -133,11 +146,14 @@ func RenderTable(rows []Row) {
 func RenderJSON(rows []Row) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	return enc.Encode(rows)
+	if err := enc.Encode(rows); err != nil {
+		return fmt.Errorf("encoding JSON output: %w", err)
+	}
+	return nil
 }
 
 func printSep() {
-	fmt.Printf("%s  %s%s\n", ansiDim, strings.Repeat("─", 107), ansiReset)
+	fmt.Printf("%s  %s%s\n", ansiDim, strings.Repeat("─", sepWidth), ansiReset)
 }
 
 func colorFor(s Status) string {
@@ -172,11 +188,11 @@ func iconFor(s Status) string {
 
 func formatDuration(seconds int64) string {
 	if seconds < 0 {
-		return "—"
+		return emDash
 	}
-	d := seconds / 86400
-	h := (seconds % 86400) / 3600
-	m := (seconds % 3600) / 60
+	d := seconds / secsPerDay
+	h := (seconds % secsPerDay) / secsPerHour
+	m := (seconds % secsPerHour) / secsPerMin
 	if d > 0 {
 		return fmt.Sprintf("%dd %dh", d, h)
 	}
@@ -188,23 +204,23 @@ func formatDuration(seconds int64) string {
 
 func formatIdle(seconds int64) string {
 	if seconds < 0 {
-		return "—"
+		return emDash
 	}
-	if seconds < 60 {
+	if seconds < secsPerMin {
 		return fmt.Sprintf("%ds", seconds)
 	}
-	if seconds < 3600 {
-		return fmt.Sprintf("%dm", seconds/60)
+	if seconds < secsPerHour {
+		return fmt.Sprintf("%dm", seconds/secsPerMin)
 	}
-	if seconds < 86400 {
-		return fmt.Sprintf("%dh %dm", seconds/3600, (seconds%3600)/60)
+	if seconds < secsPerDay {
+		return fmt.Sprintf("%dh %dm", seconds/secsPerHour, (seconds%secsPerHour)/secsPerMin)
 	}
-	return fmt.Sprintf("%dd", seconds/86400)
+	return fmt.Sprintf("%dd", seconds/secsPerDay)
 }
 
-func truncate(s string, max int) string {
-	if len(s) > max {
-		return s[:max-1] + "…"
+func truncate(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen-1] + "…"
 	}
 	return s
 }

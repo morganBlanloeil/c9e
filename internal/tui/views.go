@@ -15,8 +15,22 @@ import (
 
 // Layout constants: fixed lines consumed by UI chrome.
 const (
-	listFixedLines = 9 // title, 2 separators, summary, header, separator, footer separator, stats, help
-	logFixedLines  = 7 // title, 2 separators, status bar, separator, footer separator, help
+	listFixedLines    = 9 // title, 2 separators, summary, header, separator, footer separator, stats, help
+	logFixedLines     = 7 // title, 2 separators, status bar, separator, footer separator, help
+	emDash            = "—"
+	maxCwdLen         = 40
+	maxActionLen      = 50
+	statusPadWidth    = 8
+	secsPerDay        = 86400
+	secsPerHour       = 3600
+	secsPerMin        = 60
+	tokensPerMillion  = 1_000_000
+	tokensPerThousand = 1_000
+	logPrefixWidth    = 18
+	minSummaryWidth   = 20
+	highCostThreshold = 1.0
+	medCostThreshold  = 0.10
+	tokenFormatBase   = 10
 )
 
 func (m Model) viewList() string {
@@ -24,7 +38,7 @@ func (m Model) viewList() string {
 
 	// Title bar
 	title := titleStyle.Render("  Claude Code Dashboard")
-	ver := dimStyle.Render(fmt.Sprintf(" %s", m.version))
+	ver := dimStyle.Render(" " + m.version)
 	b.WriteString(title + ver + "\n")
 
 	// Separator
@@ -66,7 +80,7 @@ func (m Model) viewList() string {
 		summary += "  " + doneCountStyle.Render(fmt.Sprintf("★ %d done", doneCount))
 	}
 	if totalCost > 0 {
-		summary += "  " + styledCost(totalCost).Render(fmt.Sprintf("Total: %s", cost.Format(totalCost)))
+		summary += "  " + styledCost(totalCost).Render("Total: "+cost.Format(totalCost))
 	}
 	b.WriteString(summary + "\n")
 
@@ -74,14 +88,14 @@ func (m Model) viewList() string {
 	if m.filtering {
 		b.WriteString(filterPromptStyle.Render("  /") + filterTextStyle.Render(m.filter+"█") + "\n")
 	} else if m.filter != "" {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("  filter: %s", m.filter)) + "\n")
+		b.WriteString(dimStyle.Render("  filter: "+m.filter) + "\n")
 	}
 
 	// Separator
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Sort indicator
-	sortInfo := dimStyle.Render(fmt.Sprintf("  sort: %s", sortColumnNames[m.sortCol]))
+	sortInfo := dimStyle.Render("  sort: " + sortColumnNames[m.sortCol])
 	if m.sortAsc {
 		sortInfo += dimStyle.Render(" ▲")
 	} else {
@@ -120,10 +134,7 @@ func (m Model) viewList() string {
 	}
 
 	// Pad empty space
-	rendered := len(m.filtered) - scrollOffset
-	if rendered > visibleRows {
-		rendered = visibleRows
-	}
+	rendered := min(len(m.filtered)-scrollOffset, visibleRows)
 	for i := rendered; i < visibleRows; i++ {
 		b.WriteString("\n")
 	}
@@ -134,9 +145,9 @@ func (m Model) viewList() string {
 	// Aggregate stats bar
 	var totalCPU, totalMem float64
 	for _, r := range m.rows {
-		c, _ := strconv.ParseFloat(r.CPU, 64)
+		c, _ := strconv.ParseFloat(r.CPU, bitSize64)
 		totalCPU += c
-		me, _ := strconv.ParseFloat(r.Mem, 64)
+		me, _ := strconv.ParseFloat(r.Mem, bitSize64)
 		totalMem += me
 	}
 	stats := fmt.Sprintf("  %d sessions  |  CPU: %.1f%%  MEM: %.1f%%  |  %d active  %d idle  %d dead",
@@ -163,7 +174,7 @@ func (m Model) viewList() string {
 		if m.notifyEnabled {
 			notifyState = notifyOnStyle.Render("ON")
 		}
-		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  s/S: sort  c: copy cwd  n: notify %s  q: quit", notifyState)
+		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  o: jump  d: kill  /: filter  s/S: sort  c: copy cwd  n: notify %s  q: quit", notifyState)
 		b.WriteString(helpStyle.Render(help))
 	}
 
@@ -175,15 +186,15 @@ func (m Model) renderRow(r display.Row) string {
 	status := statusText(r.Status)
 	if m.isDone(r.SessionID) {
 		icon = doneBadge.Render("★")
-		status = doneBadge.Render(fmt.Sprintf("%-8s", "DONE"))
+		status = doneBadge.Render(fmt.Sprintf("%-*s", statusPadWidth, "DONE"))
 	}
 	uptime := fmt.Sprintf("%-10s", formatDuration(r.UptimeSec))
 	idle := fmt.Sprintf("%-9s", formatIdle(r.IdleSec))
-	cwd := fmt.Sprintf("%-40s", truncate(filepath.Base(r.Cwd), 40))
-	action := display.CleanAction(truncate(r.LastAction, 50))
+	cwd := fmt.Sprintf("%-40s", truncate(filepath.Base(r.Cwd), maxCwdLen))
+	action := display.CleanAction(truncate(r.LastAction, maxActionLen))
 	turns := fmt.Sprintf("%5d", r.Turns)
 
-	costStr := fmt.Sprintf("%8s", "—")
+	costStr := fmt.Sprintf("%8s", emDash)
 	if r.Cost != "" {
 		costStr = styledCost(r.CostValue).Render(fmt.Sprintf("%8s", r.Cost))
 	}
@@ -209,7 +220,7 @@ func (m Model) viewDetail() string {
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n\n")
 
 	// Fields
-	costDisplay := "—"
+	costDisplay := emDash
 	if r.Cost != "" {
 		costDisplay = r.Cost
 	}
@@ -223,7 +234,7 @@ func (m Model) viewDetail() string {
 	}
 	modelDisplay := r.CostModel
 	if modelDisplay == "" {
-		modelDisplay = "—"
+		modelDisplay = emDash
 	}
 
 	fields := []struct {
@@ -231,14 +242,14 @@ func (m Model) viewDetail() string {
 		value string
 	}{
 		{"Status", string(r.Status)},
-		{"PID", fmt.Sprintf("%d", r.PID)},
+		{"PID", strconv.Itoa(r.PID)},
 		{"Session ID", r.SessionID},
 		{"Directory", r.RawCwd},
 		{"CPU", r.CPU + "%"},
 		{"Memory", r.Mem + "%"},
 		{"Uptime", formatDuration(r.UptimeSec)},
 		{"Idle", formatIdle(r.IdleSec)},
-		{"Turns", fmt.Sprintf("%d", r.Turns)},
+		{"Turns", strconv.Itoa(r.Turns)},
 		{costLabel, costDisplay + tokenInfo},
 		{"Model", modelDisplay},
 		{"Last Action", display.CleanAction(r.LastAction)},
@@ -258,7 +269,8 @@ func (m Model) viewDetail() string {
 	}
 
 	// Pad
-	usedLines := len(fields) + 4
+	const detailHeaderLines = 4 // title + separator + blank + footer
+	usedLines := len(fields) + detailHeaderLines
 	for i := usedLines; i < m.height-2; i++ {
 		b.WriteString("\n")
 	}
@@ -286,7 +298,7 @@ func statusIcon(s display.Status) string {
 }
 
 func statusText(s display.Status) string {
-	padded := fmt.Sprintf("%-8s", string(s))
+	padded := fmt.Sprintf("%-*s", statusPadWidth, string(s))
 	switch s {
 	case display.StatusActive:
 		return activeBadge.Render(padded)
@@ -304,9 +316,9 @@ func statusText(s display.Status) string {
 // styledCost returns the appropriate lipgloss style for a cost value.
 func styledCost(costValue float64) lipgloss.Style {
 	switch {
-	case costValue > 1.0:
+	case costValue > highCostThreshold:
 		return costHigh
-	case costValue >= 0.10:
+	case costValue >= medCostThreshold:
 		return costMedium
 	default:
 		return costLow
@@ -315,11 +327,11 @@ func styledCost(costValue float64) lipgloss.Style {
 
 func formatDuration(seconds int64) string {
 	if seconds < 0 {
-		return "—"
+		return emDash
 	}
-	d := seconds / 86400
-	h := (seconds % 86400) / 3600
-	m := (seconds % 3600) / 60
+	d := seconds / secsPerDay
+	h := (seconds % secsPerDay) / secsPerHour
+	m := (seconds % secsPerHour) / secsPerMin
 	if d > 0 {
 		return fmt.Sprintf("%dd %dh", d, h)
 	}
@@ -331,29 +343,29 @@ func formatDuration(seconds int64) string {
 
 func formatIdle(seconds int64) string {
 	if seconds < 0 {
-		return "—"
+		return emDash
 	}
-	if seconds < 60 {
+	if seconds < secsPerMin {
 		return fmt.Sprintf("%ds", seconds)
 	}
-	if seconds < 3600 {
-		return fmt.Sprintf("%dm", seconds/60)
+	if seconds < secsPerHour {
+		return fmt.Sprintf("%dm", seconds/secsPerMin)
 	}
-	if seconds < 86400 {
-		return fmt.Sprintf("%dh %dm", seconds/3600, (seconds%3600)/60)
+	if seconds < secsPerDay {
+		return fmt.Sprintf("%dh %dm", seconds/secsPerHour, (seconds%secsPerHour)/secsPerMin)
 	}
-	return fmt.Sprintf("%dd", seconds/86400)
+	return fmt.Sprintf("%dd", seconds/secsPerDay)
 }
 
 // formatTokenCount formats a token count as a human-readable string (e.g. "1.2K", "3.4M").
 func formatTokenCount(tokens int64) string {
 	switch {
-	case tokens >= 1_000_000:
-		return fmt.Sprintf("%.1fM", float64(tokens)/1_000_000)
-	case tokens >= 1_000:
-		return fmt.Sprintf("%.1fK", float64(tokens)/1_000)
+	case tokens >= tokensPerMillion:
+		return fmt.Sprintf("%.1fM", float64(tokens)/tokensPerMillion)
+	case tokens >= tokensPerThousand:
+		return fmt.Sprintf("%.1fK", float64(tokens)/tokensPerThousand)
 	default:
-		return fmt.Sprintf("%d", tokens)
+		return strconv.FormatInt(tokens, tokenFormatBase)
 	}
 }
 
@@ -377,7 +389,7 @@ func (m Model) viewLogs() string {
 	if sid == "" {
 		sid = r.SessionID
 	}
-	title := detailTitleStyle.Render(fmt.Sprintf("  Log Tail — Session %s", sid))
+	title := detailTitleStyle.Render("  Log Tail — Session " + sid)
 	b.WriteString(title + "\n")
 	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
@@ -444,10 +456,8 @@ func renderLogEntry(e logs.LogEntry, width int) string {
 	}
 
 	// Truncate summary to fit width (account for "  HH:MM:SS  X  " prefix ~18 chars)
-	maxSummary := width - 18
-	if maxSummary < 20 {
-		maxSummary = 20
-	}
+	maxSummary := width - logPrefixWidth
+	maxSummary = max(maxSummary, minSummaryWidth)
 	summary := e.Summary
 	runes := []rune(summary)
 	if len(runes) > maxSummary {

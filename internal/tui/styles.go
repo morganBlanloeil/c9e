@@ -2,6 +2,8 @@ package tui
 
 import "github.com/charmbracelet/lipgloss"
 
+const detailLabelWidth = 16
+
 // AdaptiveColor: {Light, Dark}
 var (
 	// Colors — adaptive for light/dark terminals
@@ -43,8 +45,6 @@ var (
 				Background(selectedBg).
 				Foreground(selectedFg)
 
-	normalRowStyle = lipgloss.NewStyle()
-
 	// Done row highlight — full-row background for recently finished sessions
 	doneRowStyle = lipgloss.NewStyle().
 			Background(doneBg).
@@ -75,13 +75,10 @@ var (
 	detailLabelStyle = lipgloss.NewStyle().
 				Foreground(purple).
 				Bold(true).
-				Width(16)
+				Width(detailLabelWidth)
 
 	detailValueStyle = lipgloss.NewStyle().
 				Foreground(text)
-
-	detailSepStyle = lipgloss.NewStyle().
-			Foreground(dim)
 
 	// Filter
 	filterPromptStyle = lipgloss.NewStyle().
@@ -95,9 +92,9 @@ var (
 	dimStyle = lipgloss.NewStyle().Foreground(dim)
 
 	// Cost column styles
-	costLow    = lipgloss.NewStyle().Foreground(green)                           // < $0.10
-	costMedium = lipgloss.NewStyle().Foreground(yellow)                          // $0.10 - $1.00
-	costHigh   = lipgloss.NewStyle().Foreground(red).Bold(true)                  // > $1.00
+	costLow    = lipgloss.NewStyle().Foreground(green)          // < $0.10
+	costMedium = lipgloss.NewStyle().Foreground(yellow)         // $0.10 - $1.00
+	costHigh   = lipgloss.NewStyle().Foreground(red).Bold(true) // > $1.00
 
 	// Log view styles
 	logUserIcon   = lipgloss.NewStyle().Foreground(cyan).Bold(true)

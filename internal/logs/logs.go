@@ -3,6 +3,7 @@ package logs
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,6 +18,15 @@ const (
 	EntryUser LogEntryType = iota
 	EntryAssistant
 	EntrySystem
+)
+
+const (
+	roleUser         = "user"
+	roleAssistant    = "assistant"
+	scannerBufSize   = 512 * 1024
+	readTailSize     = 1024 * 1024
+	lastRoleTailSize = 64 * 1024
+	maxSummaryLen    = 120
 )
 
 // LogEntry is a parsed line from a session JSONL file.
@@ -43,54 +53,61 @@ func ResolvePath(sessionID, cwd string) string {
 
 // ReadTail reads the last n entries from a JSONL file.
 // Returns entries, the file offset after reading, and any error.
-func ReadTail(path string, n int) ([]LogEntry, int64, error) {
+func ReadTail(path string, n int) (entries []LogEntry, offset int64, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("opening log file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("closing log file: %w", cerr)
+		}
+	}()
 
 	info, err := f.Stat()
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("reading log file info: %w", err)
 	}
 
 	// Seek to last 1MB for performance
-	const tailSize = 1024 * 1024
-	if info.Size() > tailSize {
-		if _, err := f.Seek(-tailSize, io.SeekEnd); err != nil {
-			return nil, 0, err
+	if info.Size() > readTailSize {
+		if _, err := f.Seek(-readTailSize, io.SeekEnd); err != nil {
+			return nil, 0, fmt.Errorf("seeking log file: %w", err)
 		}
 		// Skip partial first line
 		reader := bufio.NewReader(f)
 		if _, err := reader.ReadString('\n'); err != nil && err != io.EOF {
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("reading log file: %w", err)
 		}
 	}
 
-	entries := scanEntries(f)
+	entries = scanEntries(f)
 
 	// Keep last n
 	if len(entries) > n {
 		entries = entries[len(entries)-n:]
 	}
 
-	offset := info.Size()
+	offset = info.Size()
 	return entries, offset, nil
 }
 
 // ReadFrom reads new entries from a JSONL file starting at the given offset.
 // Returns new entries, the updated offset, and any error.
-func ReadFrom(path string, offset int64) ([]LogEntry, int64, error) {
+func ReadFrom(path string, offset int64) (entries []LogEntry, newOffset int64, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, offset, err
+		return nil, offset, fmt.Errorf("opening log file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("closing log file: %w", cerr)
+		}
+	}()
 
 	info, err := f.Stat()
 	if err != nil {
-		return nil, offset, err
+		return nil, offset, fmt.Errorf("reading log file info: %w", err)
 	}
 
 	if info.Size() <= offset {
@@ -98,10 +115,10 @@ func ReadFrom(path string, offset int64) ([]LogEntry, int64, error) {
 	}
 
 	if _, err := f.Seek(offset, io.SeekStart); err != nil {
-		return nil, offset, err
+		return nil, offset, fmt.Errorf("seeking log file: %w", err)
 	}
 
-	entries := scanEntries(f)
+	entries = scanEntries(f)
 	return entries, info.Size(), nil
 }
 
@@ -113,7 +130,7 @@ func LastRole(path string) string {
 	if err != nil {
 		return ""
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	info, err := f.Stat()
 	if err != nil {
@@ -121,9 +138,8 @@ func LastRole(path string) string {
 	}
 
 	// Read last 64KB — enough to find the last message
-	const tailSize = 64 * 1024
-	if info.Size() > tailSize {
-		if _, err := f.Seek(-tailSize, io.SeekEnd); err != nil {
+	if info.Size() > lastRoleTailSize {
+		if _, err := f.Seek(-lastRoleTailSize, io.SeekEnd); err != nil {
 			return ""
 		}
 		// Skip partial first line
@@ -140,13 +156,13 @@ func LastRole(path string) string {
 func scanLastRole(r io.Reader) string {
 	var lastRole string
 	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 512*1024), 512*1024)
+	scanner.Buffer(make([]byte, scannerBufSize), scannerBufSize)
 	for scanner.Scan() {
 		var line jsonLine
 		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
 			continue
 		}
-		if line.Type == "user" || line.Type == "assistant" {
+		if line.Type == roleUser || line.Type == roleAssistant {
 			lastRole = line.Type
 		}
 	}
@@ -156,7 +172,7 @@ func scanLastRole(r io.Reader) string {
 func scanEntries(r io.Reader) []LogEntry {
 	var entries []LogEntry
 	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 512*1024), 512*1024)
+	scanner.Buffer(make([]byte, scannerBufSize), scannerBufSize)
 
 	for scanner.Scan() {
 		if entry, ok := parseLine(scanner.Bytes()); ok {
@@ -179,47 +195,48 @@ type messageEnvelope struct {
 }
 
 type contentBlock struct {
-	Type    string `json:"type"`
-	Text    string `json:"text"`
-	Name    string `json:"name"`    // tool_use name
-	Input   any    `json:"input"`   // tool_use input (ignored but present)
+	Type  string `json:"type"`
+	Text  string `json:"text"`
+	Name  string `json:"name"`  // tool_use name
+	Input any    `json:"input"` // tool_use input (ignored but present)
 }
 
 func parseLine(data []byte) (LogEntry, bool) {
 	var line jsonLine
 	if err := json.Unmarshal(data, &line); err != nil {
-		return LogEntry{}, false
+		return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 	}
 
 	// Only process user and assistant message types
-	if line.Type != "user" && line.Type != "assistant" {
-		return LogEntry{}, false
+	if line.Type != roleUser && line.Type != roleAssistant {
+		return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 	}
 
 	ts, _ := time.Parse(time.RFC3339Nano, line.Timestamp)
 
 	if line.Message == nil {
-		return LogEntry{}, false
+		return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 	}
 
 	var msg messageEnvelope
 	if err := json.Unmarshal(line.Message, &msg); err != nil {
-		return LogEntry{}, false
+		return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 	}
 
 	// User message: content is typically a string
-	if msg.Role == "user" {
+	if msg.Role == roleUser {
 		var contentStr string
 		if err := json.Unmarshal(msg.Content, &contentStr); err == nil {
-			summary := cleanSummary(contentStr, 120)
+			summary := cleanSummary(contentStr, maxSummaryLen)
 			if summary == "" {
-				return LogEntry{}, false
+				return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 			}
 			return LogEntry{
 				Timestamp: ts,
 				Type:      EntryUser,
-				RawType:   "user",
+				RawType:   roleUser,
 				Summary:   summary,
+				HasThink:  false,
 			}, true
 		}
 		// Content might be an array (tool_result)
@@ -232,36 +249,38 @@ func parseLine(data []byte) (LogEntry, bool) {
 						Type:      EntryUser,
 						RawType:   "tool_result",
 						Summary:   "Tool result",
+						HasThink:  false,
 					}, true
 				}
 			}
 		}
-		return LogEntry{}, false
+		return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 	}
 
 	// Assistant message: content is an array of blocks
-	if msg.Role == "assistant" {
+	if msg.Role == roleAssistant {
 		var blocks []contentBlock
 		if err := json.Unmarshal(msg.Content, &blocks); err != nil {
-			return LogEntry{}, false
+			return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 		}
 		if len(blocks) == 0 {
-			return LogEntry{}, false
+			return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 		}
 
 		// Use the first block to determine type
 		block := blocks[0]
 		switch block.Type {
 		case "text":
-			summary := cleanSummary(block.Text, 120)
+			summary := cleanSummary(block.Text, maxSummaryLen)
 			if summary == "" {
-				return LogEntry{}, false
+				return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 			}
 			return LogEntry{
 				Timestamp: ts,
 				Type:      EntryAssistant,
 				RawType:   "text",
 				Summary:   summary,
+				HasThink:  false,
 			}, true
 		case "tool_use":
 			return LogEntry{
@@ -269,6 +288,7 @@ func parseLine(data []byte) (LogEntry, bool) {
 				Type:      EntryAssistant,
 				RawType:   "tool_use",
 				Summary:   "Tool: " + block.Name,
+				HasThink:  false,
 			}, true
 		case "thinking":
 			return LogEntry{
@@ -281,7 +301,7 @@ func parseLine(data []byte) (LogEntry, bool) {
 		}
 	}
 
-	return LogEntry{}, false
+	return LogEntry{Timestamp: time.Time{}, Type: 0, RawType: "", Summary: "", HasThink: false}, false
 }
 
 // CountTurns counts user message entries in a session JSONL file.
@@ -291,17 +311,17 @@ func CountTurns(path string) int {
 	if err != nil {
 		return 0
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	count := 0
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 512*1024), 512*1024)
+	scanner.Buffer(make([]byte, scannerBufSize), scannerBufSize)
 	for scanner.Scan() {
 		var line jsonLine
 		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
 			continue
 		}
-		if line.Type == "user" {
+		if line.Type == roleUser {
 			count++
 		}
 	}
