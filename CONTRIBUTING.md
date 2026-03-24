@@ -471,9 +471,9 @@ The `idle` duration is calculated as `now - last_action_timestamp`. A session wi
 
 **Code:** `internal/history/history.go`
 
-#### Process stats — `ps aux`
+#### Process stats — `ps -eo pid,ppid,%cpu,%mem,args`
 
-Live CPU and memory usage is obtained by running `ps aux` and filtering lines that contain `claude` (excluding `Claude.app` desktop processes). The PID from `ps` is matched against session files to determine if a session is alive.
+Live CPU and memory usage is obtained by running `ps -eo pid,ppid,%cpu,%mem,args` and filtering lines that contain `claude` (excluding `Claude.app` desktop processes). The PID from `ps` is matched against session files to determine if a session is alive. The PPID (parent PID) is used to build a process tree for detecting agent subprocesses.
 
 A process is identified as a Claude Code CLI instance if:
 
