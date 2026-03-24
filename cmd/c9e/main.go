@@ -171,10 +171,12 @@ func runStatic(jsonOutput bool) error {
 		switch {
 		case !alive:
 			status = display.StatusDead
+		case process.HasClaudeChildren(s.PID, procs):
+			status = display.StatusWaiting
+		case logPath != "" && logs.IsRecentlyModified(logPath, logs.ActiveWriteThreshold):
+			status = display.StatusActive
 		case idleSec > int64(display.IdleThreshold.Seconds()):
 			status = display.StatusIdle
-		case logPath != "" && logs.LastRole(logPath) == "assistant":
-			status = display.StatusWaiting
 		}
 
 		// Count conversation turns

@@ -12,8 +12,6 @@ import (
 	"github.com/wescale/claude-dashboard/internal/session"
 )
 
-const roleAssistant = "assistant"
-
 // fetchRows collects all session data and returns display rows.
 func fetchRows() ([]display.Row, error) {
 	sessions, err := session.LoadAll()
@@ -63,14 +61,12 @@ func fetchRows() ([]display.Row, error) {
 		switch {
 		case !alive:
 			status = display.StatusDead
-		case idleSec > int64(display.IdleThreshold.Seconds()):
-			if process.HasClaudeChildren(s.PID, procs) {
-				status = display.StatusWaiting
-			} else {
-				status = display.StatusIdle
-			}
-		case logPath != "" && logs.LastRole(logPath) == roleAssistant:
+		case process.HasClaudeChildren(s.PID, procs):
 			status = display.StatusWaiting
+		case logPath != "" && logs.IsRecentlyModified(logPath, logs.ActiveWriteThreshold):
+			status = display.StatusActive
+		case idleSec > int64(display.IdleThreshold.Seconds()):
+			status = display.StatusIdle
 		}
 
 		sid := s.SessionID

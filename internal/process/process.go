@@ -28,16 +28,34 @@ const (
 	psMemIndex  = 3
 )
 
-// ListClaude returns process info for all running Claude Code CLI instances.
-// It uses "ps -eo pid,ppid,%cpu,%mem,args" to capture parent PIDs.
+// ProcessTree holds the full PID→PPID mapping for all system processes.
+// It is used to walk the ancestry chain when detecting sub-agent descendants.
+type ProcessTree map[int]int // pid → ppid
+
+// ListClaude returns process info for all running Claude Code CLI instances,
+// along with the full process tree needed to detect descendant relationships.
 func ListClaude() (map[int]Info, error) {
+	claudeProcs, tree, err := listClaudeWithTree()
+	if err != nil {
+		return nil, err
+	}
+	// Store tree for later use by HasClaudeDescendants.
+	lastTree = tree
+	return claudeProcs, nil
+}
+
+// lastTree caches the process tree from the most recent ListClaude call.
+var lastTree ProcessTree
+
+func listClaudeWithTree() (map[int]Info, ProcessTree, error) {
 	cmd := exec.CommandContext(context.Background(), "ps", "-eo", "pid,ppid,%cpu,%mem,args")
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("ps failed: %w", err)
+		return nil, nil, fmt.Errorf("ps failed: %w", err)
 	}
 
-	result := make(map[int]Info)
+	claudeProcs := make(map[int]Info)
+	tree := make(ProcessTree)
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	// Skip header
 	if scanner.Scan() {
@@ -51,11 +69,6 @@ func ListClaude() (map[int]Info, error) {
 			continue
 		}
 
-		cmdStr := strings.Join(fields[psCmdIndex:], " ")
-		if !isClaudeCodeCLI(cmdStr) {
-			continue
-		}
-
 		pid, err := strconv.Atoi(fields[psPIDIndex])
 		if err != nil {
 			continue
@@ -66,7 +79,15 @@ func ListClaude() (map[int]Info, error) {
 			continue
 		}
 
-		result[pid] = Info{
+		// Record every process in the tree for ancestry walks.
+		tree[pid] = ppid
+
+		cmdStr := strings.Join(fields[psCmdIndex:], " ")
+		if !isClaudeCodeCLI(cmdStr) {
+			continue
+		}
+
+		claudeProcs[pid] = Info{
 			PID:   pid,
 			PPID:  ppid,
 			CPU:   fields[psCPUIndex],
@@ -75,17 +96,42 @@ func ListClaude() (map[int]Info, error) {
 		}
 	}
 
-	return result, nil
+	return claudeProcs, tree, nil
 }
 
-// HasClaudeChildren reports whether any Claude Code process has pid as its parent.
+// HasClaudeChildren reports whether any Claude Code process is a descendant
+// of pid, walking the full process tree (not just direct children).
 func HasClaudeChildren(pid int, procs map[int]Info) bool {
-	for _, p := range procs {
-		if p.PPID == pid {
+	for cpid := range procs {
+		if cpid == pid {
+			continue
+		}
+		if isDescendantOf(cpid, pid, lastTree) {
 			return true
 		}
 	}
 	return false
+}
+
+// isDescendantOf walks the process tree upward from child to see if it
+// reaches ancestor. Guards against cycles with a visited set.
+func isDescendantOf(child, ancestor int, tree ProcessTree) bool {
+	visited := make(map[int]bool)
+	current := child
+	for {
+		ppid, ok := tree[current]
+		if !ok || ppid == 0 || ppid == current {
+			return false
+		}
+		if ppid == ancestor {
+			return true
+		}
+		if visited[ppid] {
+			return false
+		}
+		visited[current] = true
+		current = ppid
+	}
 }
 
 // Kill sends SIGTERM to a process.
