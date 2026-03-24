@@ -155,7 +155,7 @@ If stdout is not a TTY (e.g., piped), the dashboard automatically falls back to 
 
 | Status | Icon | Meaning |
 |--------|------|---------|
-| ACTIVE | `●` | Interaction within the last 5 minutes |
+| ACTIVE | `●` | Interaction within the last 5 minutes, or actively generating output |
 | WAITING | `◇` | Session has active agent subprocesses |
 | IDLE | `◐` | No interaction for more than 5 minutes |
 | DEAD | `○` | Session file exists but process is gone |
