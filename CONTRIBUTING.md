@@ -490,7 +490,7 @@ The dashboard uses conversation logs for:
 
 - **Turn count** — number of user messages in the session
 - **Cost estimation** — token usage data is extracted to estimate per-session cost
-- **WAITING status** — if the last log entry's role is "assistant", the session is marked as waiting for user input; also set when the session has active agent subprocesses (even if idle for >5 minutes)
+- **WAITING status** — set when the session has active agent subprocesses (child Claude processes detected via process tree walk)
 - **Log tail view** — streams the conversation log with follow mode and thinking toggle
 
 **Code:** `internal/logs/logs.go`, `internal/cost/cost.go`
