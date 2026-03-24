@@ -64,7 +64,11 @@ func fetchRows() ([]display.Row, error) {
 		case !alive:
 			status = display.StatusDead
 		case idleSec > int64(display.IdleThreshold.Seconds()):
-			status = display.StatusIdle
+			if process.HasClaudeChildren(s.PID, procs) {
+				status = display.StatusWaiting
+			} else {
+				status = display.StatusIdle
+			}
 		case logPath != "" && logs.LastRole(logPath) == roleAssistant:
 			status = display.StatusWaiting
 		}

@@ -161,7 +161,7 @@ If stdout is not a TTY (e.g., piped), the dashboard automatically falls back to 
 | Status | Icon | Meaning |
 |--------|------|---------|
 | ACTIVE | `●` | Interaction within the last 5 minutes |
-| WAITING | `◇` | Claude has responded, awaiting user input |
+| WAITING | `◇` | Claude has responded and is awaiting user input, or session has active agent subprocesses |
 | IDLE | `◐` | No interaction for more than 5 minutes |
 | DEAD | `○` | Session file exists but process is gone |
 | DONE | `★` | Task recently completed (30-second highlight) |
