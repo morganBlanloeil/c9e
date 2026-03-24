@@ -12,26 +12,29 @@ import (
 // Info holds live process stats.
 type Info struct {
 	PID   int
+	PPID  int
 	CPU   string
 	Mem   string
 	Alive bool
 }
 
-// ps aux field layout constants.
+// ps -eo field layout constants.
 const (
-	psMinFields = 11 // minimum fields in a ps aux line
-	psCmdIndex  = 10 // index where command string starts
-	psPIDIndex  = 1
+	psMinFields = 5 // minimum fields in a ps -eo line
+	psCmdIndex  = 4 // index where command string starts
+	psPIDIndex  = 0
+	psPPIDIndex = 1
 	psCPUIndex  = 2
 	psMemIndex  = 3
 )
 
 // ListClaude returns process info for all running Claude Code CLI instances.
+// It uses "ps -eo pid,ppid,%cpu,%mem,args" to capture parent PIDs.
 func ListClaude() (map[int]Info, error) {
-	cmd := exec.CommandContext(context.Background(), "ps", "aux")
+	cmd := exec.CommandContext(context.Background(), "ps", "-eo", "pid,ppid,%cpu,%mem,args")
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("ps aux failed: %w", err)
+		return nil, fmt.Errorf("ps failed: %w", err)
 	}
 
 	result := make(map[int]Info)
@@ -58,8 +61,14 @@ func ListClaude() (map[int]Info, error) {
 			continue
 		}
 
+		ppid, err := strconv.Atoi(fields[psPPIDIndex])
+		if err != nil {
+			continue
+		}
+
 		result[pid] = Info{
 			PID:   pid,
+			PPID:  ppid,
 			CPU:   fields[psCPUIndex],
 			Mem:   fields[psMemIndex],
 			Alive: true,
@@ -67,6 +76,16 @@ func ListClaude() (map[int]Info, error) {
 	}
 
 	return result, nil
+}
+
+// HasClaudeChildren reports whether any Claude Code process has pid as its parent.
+func HasClaudeChildren(pid int, procs map[int]Info) bool {
+	for _, p := range procs {
+		if p.PPID == pid {
+			return true
+		}
+	}
+	return false
 }
 
 // Kill sends SIGTERM to a process.
