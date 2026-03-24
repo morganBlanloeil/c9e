@@ -50,8 +50,8 @@ func TestHasClaudeChildren_DeepTree(t *testing.T) {
 	lastTree = tree
 
 	procs := map[int]Info{
-		100: {PID: 100, PPID: 1},
-		300: {PID: 300, PPID: 200}, // sub-agent, NOT direct child of 100
+		100: {PID: 100, PPID: 1, CPU: "", Mem: "", Alive: false},
+		300: {PID: 300, PPID: 200, CPU: "", Mem: "", Alive: false}, // sub-agent, NOT direct child of 100
 	}
 
 	if !HasClaudeChildren(100, procs) {
