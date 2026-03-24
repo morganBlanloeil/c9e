@@ -163,7 +163,7 @@ func (m Model) viewList() string {
 		if m.notifyEnabled {
 			notifyState = notifyOnStyle.Render("ON")
 		}
-		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  d: kill  /: filter  s/S: sort  c: copy cwd  n: notify %s  q: quit", notifyState)
+		help := fmt.Sprintf("  j/k: navigate  enter: detail  l: logs  o: jump  d: kill  /: filter  s/S: sort  c: copy cwd  n: notify %s  q: quit", notifyState)
 		b.WriteString(helpStyle.Render(help))
 	}
 

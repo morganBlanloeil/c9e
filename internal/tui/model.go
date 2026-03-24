@@ -15,6 +15,7 @@ import (
 	"github.com/wescale/claude-dashboard/internal/logs"
 	"github.com/wescale/claude-dashboard/internal/notify"
 	"github.com/wescale/claude-dashboard/internal/process"
+	"github.com/wescale/claude-dashboard/internal/terminal"
 )
 
 // SortColumn identifies which column to sort by.
@@ -103,6 +104,9 @@ type killMsg struct {
 
 // clipboardFlashMsg clears the clipboard flash message.
 type clipboardFlashMsg struct{}
+
+// jumpMsg carries the result of a jump-to-terminal attempt.
+type jumpMsg struct{ err error }
 
 // copyToClipboard copies text to system clipboard.
 func copyToClipboard(text string) error {
@@ -268,6 +272,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case jumpMsg:
+		if msg.err != nil {
+			m.clipboardFlash = msg.err.Error()
+		} else {
+			m.clipboardFlash = "Jumped to terminal"
+		}
+		m.clipboardFlashEnd = time.Now().Add(2 * time.Second)
+		return m, tea.Tick(2*time.Second, func(_ time.Time) tea.Msg {
+			return clipboardFlashMsg{}
+		})
+
 	case killMsg:
 		if msg.err != nil {
 			m.err = msg.err
@@ -390,6 +405,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					return m, tea.Tick(2*time.Second, func(_ time.Time) tea.Msg {
 						return clipboardFlashMsg{}
 					})
+				}
+			}
+		case "o":
+			// Jump to the Ghostty tab running this session
+			if r := m.selectedRow(); r != nil && r.RawCwd != "" {
+				cwd := r.RawCwd
+				return m, func() tea.Msg {
+					return jumpMsg{err: terminal.FocusByWorkdir(cwd)}
 				}
 			}
 		case "?":
