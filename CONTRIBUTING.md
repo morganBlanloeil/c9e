@@ -490,7 +490,7 @@ The dashboard uses conversation logs for:
 
 - **Turn count** — number of user messages in the session
 - **Cost estimation** — token usage data is extracted to estimate per-session cost
-- **WAITING status** — set when the session has active agent subprocesses (child Claude processes detected via process tree walk)
+- **ACTIVE status (mtime)** — a session stays ACTIVE when its log file was recently modified (within 10 seconds), even if the last user message is older than 5 minutes, indicating Claude is actively generating output
 - **Log tail view** — streams the conversation log with follow mode and thinking toggle
 
 **Code:** `internal/logs/logs.go`, `internal/cost/cost.go`
