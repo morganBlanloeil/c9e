@@ -21,11 +21,11 @@ const (
 )
 
 const (
-	roleUser         = "user"
-	roleAssistant    = "assistant"
-	scannerBufSize   = 512 * 1024
-	readTailSize     = 1024 * 1024
-	maxSummaryLen    = 120
+	roleUser       = "user"
+	roleAssistant  = "assistant"
+	scannerBufSize = 512 * 1024
+	readTailSize   = 1024 * 1024
+	maxSummaryLen  = 120
 )
 
 // LogEntry is a parsed line from a session JSONL file.
