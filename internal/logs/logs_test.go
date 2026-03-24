@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+const testRoleUser = "user"
+
 func TestResolvePath(t *testing.T) {
 	home, _ := os.UserHomeDir()
 	got := ResolvePath("abc-123", "/Users/me/projects/foo")
@@ -34,8 +36,8 @@ func TestParseLine_User(t *testing.T) {
 	if entry.Type != EntryUser {
 		t.Errorf("Type = %d, want EntryUser", entry.Type)
 	}
-	if entry.RawType != "user" {
-		t.Errorf("RawType = %q, want %q", entry.RawType, "user")
+	if entry.RawType != testRoleUser {
+		t.Errorf("RawType = %q, want %q", entry.RawType, testRoleUser)
 	}
 	if entry.Summary != "Hello world, how are you doing today?" {
 		t.Errorf("Summary = %q", entry.Summary)
@@ -117,8 +119,8 @@ func TestParseLine_TruncatesLongSummary(t *testing.T) {
 		t.Fatal("parseLine returned false")
 	}
 	runes := []rune(entry.Summary)
-	if len(runes) > 120 {
-		t.Errorf("Summary rune length = %d, want <= 120", len(runes))
+	if len(runes) > maxSummaryLen {
+		t.Errorf("Summary rune length = %d, want <= %d", len(runes), maxSummaryLen)
 	}
 }
 
@@ -177,9 +179,16 @@ func TestReadTailAndReadFrom(t *testing.T) {
 	}
 
 	// Append a new line and ReadFrom
-	f, _ := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
-	f.WriteString(`{"type":"user","timestamp":"2026-03-20T10:00:05Z","message":{"role":"user","content":"Third message"}}` + "\n")
-	f.Close()
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString(`{"type":"user","timestamp":"2026-03-20T10:00:05Z","message":{"role":"user","content":"Third message"}}` + "\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	newEntries, _, err = ReadFrom(path, offset)
 	if err != nil {

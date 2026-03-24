@@ -1,23 +1,28 @@
 package notify
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"runtime"
 )
 
-// Send sends a macOS desktop notification using osascript.
+var ErrUnsupportedPlatform = errors.New("notifications not supported")
+
 func Send(title, message string) error {
 	if runtime.GOOS != "darwin" {
-		return fmt.Errorf("notifications not supported on %s", runtime.GOOS)
+		return fmt.Errorf("%w: %s", ErrUnsupportedPlatform, runtime.GOOS)
 	}
 
 	script := fmt.Sprintf(`display notification %q with title %q sound name "Glass"`, message, title)
-	cmd := exec.Command("osascript", "-e", script)
-	return cmd.Run()
+	cmd := exec.CommandContext(context.Background(), "osascript", "-e", script)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("sending notification: %w", err)
+	}
+	return nil
 }
 
-// Available reports whether desktop notifications are supported on this platform.
 func Available() bool {
 	if runtime.GOOS != "darwin" {
 		return false
@@ -26,9 +31,7 @@ func Available() bool {
 	return err == nil
 }
 
-// BuildCommand returns the exec.Cmd that would be used to send a notification.
-// Exposed for testing purposes.
 func BuildCommand(title, message string) *exec.Cmd {
 	script := fmt.Sprintf(`display notification %q with title %q sound name "Glass"`, message, title)
-	return exec.Command("osascript", "-e", script)
+	return exec.CommandContext(context.Background(), "osascript", "-e", script)
 }

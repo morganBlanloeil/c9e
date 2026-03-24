@@ -88,32 +88,24 @@ func TestExpandHome(t *testing.T) {
 }
 
 func TestIsGhostty(t *testing.T) {
-	// Save and restore original value
-	orig := os.Getenv("TERM_PROGRAM")
-	defer os.Setenv("TERM_PROGRAM", orig)
-
-	os.Setenv("TERM_PROGRAM", "ghostty")
+	t.Setenv("TERM_PROGRAM", "ghostty")
 	if !IsGhostty() {
 		t.Error("expected IsGhostty() = true when TERM_PROGRAM=ghostty")
 	}
 
-	os.Setenv("TERM_PROGRAM", "iterm2")
+	t.Setenv("TERM_PROGRAM", "iterm2")
 	if IsGhostty() {
 		t.Error("expected IsGhostty() = false when TERM_PROGRAM=iterm2")
 	}
 
-	os.Unsetenv("TERM_PROGRAM")
+	t.Setenv("TERM_PROGRAM", "")
 	if IsGhostty() {
-		t.Error("expected IsGhostty() = false when TERM_PROGRAM is unset")
+		t.Error("expected IsGhostty() = false when TERM_PROGRAM is empty")
 	}
 }
 
 func TestFocusByWorkdirNotGhostty(t *testing.T) {
-	// Save and restore
-	orig := os.Getenv("TERM_PROGRAM")
-	defer os.Setenv("TERM_PROGRAM", orig)
-
-	os.Setenv("TERM_PROGRAM", "iterm2")
+	t.Setenv("TERM_PROGRAM", "iterm2")
 	err := FocusByWorkdir("/some/path")
 	if err == nil {
 		t.Fatal("expected error when not running in Ghostty")

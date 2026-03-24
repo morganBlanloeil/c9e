@@ -1,0 +1,65 @@
+version: "2"
+run:
+  skip-dirs:
+    - ./.go
+output:
+  formats:
+    tab:
+      path: stdout
+  path-prefix: ""
+  sort-order:
+    - linter
+    - severity
+    - file
+
+linters:
+  enable:
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - asasalint
+    - bodyclose
+    - contextcheck
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - noctx
+    - prealloc
+    - predeclared
+    - reassign
+    - unconvert
+    - unparam
+    - wastedassign
+    - canonicalheader
+    - containedctx
+    - decorder
+    - err113
+    - errchkjson
+    - exhaustive
+    - exhaustruct
+    - funcorder
+    - goconst
+    - gocritic
+    - godox
+    - goprintffuncname
+    - iface
+    - importas
+    - inamedparam
+    - mnd
+    - perfsprint
+    - thelper
+    - usestdlibvars
+    - wrapcheck
+    - zerologlint
+
+formatters:
+  enable:
+    - goimports
+    - gofmt
+
+# Issues configuration
+issues:
+  fix: true
+  uniq-by-line: true

@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -33,9 +35,23 @@ const (
 	SortByTurns
 )
 
+// ErrUnsupportedOS is returned when the OS does not support clipboard operations.
+var ErrUnsupportedOS = errors.New("unsupported OS for clipboard")
+
 var sortColumnNames = []string{"PID", "STATUS", "CPU%", "MEM%", "UPTIME", "IDLE", "DIR", "ACTION", "TURNS"}
 
-const refreshInterval = 3 * time.Second
+const (
+	refreshInterval        = 3 * time.Second
+	keyEsc                 = "esc"
+	keyCtrlC               = "ctrl+c"
+	sessionIDLen           = 8
+	doneHighlightDuration  = 30 * time.Second
+	flashDuration          = 3 * time.Second
+	clipboardFlashDuration = 2 * time.Second
+	defaultLogTailSize     = 200
+	bitSize64              = 64
+	msPerSecond            = 1000
+)
 
 // viewMode represents which screen is active.
 type viewMode int
@@ -113,44 +129,52 @@ func copyToClipboard(text string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = exec.Command("pbcopy")
+		cmd = exec.CommandContext(context.Background(), "pbcopy")
 	case "linux":
-		cmd = exec.Command("xclip", "-selection", "clipboard")
+		cmd = exec.CommandContext(context.Background(), "xclip", "-selection", "clipboard")
 	default:
-		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+		return fmt.Errorf("%w: %s", ErrUnsupportedOS, runtime.GOOS)
 	}
 	cmd.Stdin = strings.NewReader(text)
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("copying to clipboard: %w", err)
+	}
+	return nil
 }
 
 // NewModel creates a new TUI model.
 func NewModel(version string) Model {
 	return Model{
-		version:       version,
-		sortCol:       SortByPID,
-		sortAsc:       true,
-		prevStatus:    make(map[string]string),
-		doneHighlight: make(map[string]time.Time),
-		notifyEnabled: notify.Available(),
-
+		rows:              nil,
+		filtered:          nil,
+		cursor:            0,
+		width:             0,
+		height:            0,
+		view:              viewList,
+		filter:            "",
+		filtering:         false,
+		confirm:           nil,
+		err:               nil,
+		version:           version,
+		prevStatus:        make(map[string]string),
+		doneHighlight:     make(map[string]time.Time),
+		notifyEnabled:     notify.Available(),
+		notifyFlash:       "",
+		notifyFlashAt:     time.Time{},
+		sortCol:           SortByPID,
+		sortAsc:           true,
+		clipboardFlash:    "",
+		clipboardFlashEnd: time.Time{},
+		logEntries:        nil,
+		logFiltered:       nil,
+		logScroll:         0,
+		logOffset:         0,
+		logPath:           "",
+		logFollow:         false,
+		logShowThink:      false,
+		logErr:            nil,
+		logFrom:           viewList,
 	}
-}
-
-// isDone returns true if the session recently finished its task.
-func (m Model) isDone(sessionID string) bool {
-	expiry, ok := m.doneHighlight[sessionID]
-	return ok && time.Now().Before(expiry)
-}
-
-// activeFlash returns the notification flash message if still visible (3 seconds).
-func (m Model) activeFlash() string {
-	if m.notifyFlash == "" {
-		return ""
-	}
-	if time.Since(m.notifyFlashAt) > 3*time.Second {
-		return ""
-	}
-	return m.notifyFlash
 }
 
 // tickMsg triggers a data refresh.
@@ -173,7 +197,7 @@ type logDataMsg struct {
 func fetchLogCmd(path string, offset int64, initial bool) tea.Cmd {
 	return func() tea.Msg {
 		if initial {
-			entries, off, err := logs.ReadTail(path, 200)
+			entries, off, err := logs.ReadTail(path, defaultLogTailSize)
 			return logDataMsg{entries: entries, offset: off, err: err, initial: true}
 		}
 		entries, off, err := logs.ReadFrom(path, offset)
@@ -232,7 +256,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				wasActive := prev == string(display.StatusActive) || prev == string(display.StatusWaiting)
 				nowDone := r.Status == display.StatusIdle || r.Status == display.StatusDead
 				if hasPrev && wasActive && nowDone {
-					m.doneHighlight[r.SessionID] = now.Add(30 * time.Second)
+					m.doneHighlight[r.SessionID] = now.Add(doneHighlightDuration)
 					// Send desktop notification
 					if m.notifyEnabled {
 						dir := r.Cwd
@@ -278,8 +302,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.clipboardFlash = "Jumped to terminal"
 		}
-		m.clipboardFlashEnd = time.Now().Add(2 * time.Second)
-		return m, tea.Tick(2*time.Second, func(_ time.Time) tea.Msg {
+		m.clipboardFlashEnd = time.Now().Add(clipboardFlashDuration)
+		return m, tea.Tick(clipboardFlashDuration, func(_ time.Time) tea.Msg {
 			return clipboardFlashMsg{}
 		})
 
@@ -295,6 +319,39 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+// View renders the TUI.
+func (m Model) View() string {
+	if m.width == 0 {
+		return "Loading..."
+	}
+
+	switch m.view {
+	case viewList:
+		return m.viewList()
+	case viewDetail:
+		return m.viewDetail()
+	case viewLogs:
+		return m.viewLogs()
+	default:
+		return m.viewList()
+	}
+}
+
+func (m Model) isDone(sessionID string) bool {
+	expiry, ok := m.doneHighlight[sessionID]
+	return ok && time.Now().Before(expiry)
+}
+
+func (m Model) activeFlash() string {
+	if m.notifyFlash == "" {
+		return ""
+	}
+	if time.Since(m.notifyFlashAt) > flashDuration {
+		return ""
+	}
+	return m.notifyFlash
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -315,9 +372,9 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Filter mode input
 	if m.filtering {
 		switch key {
-		case "enter", "esc":
+		case "enter", keyEsc:
 			m.filtering = false
-			if key == "esc" {
+			if key == keyEsc {
 				m.filter = ""
 				m.applyFilter()
 			}
@@ -339,7 +396,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch m.view {
 	case viewList:
 		switch key {
-		case "q", "ctrl+c":
+		case "q", keyCtrlC:
 			return m, tea.Quit
 		case "j", "down":
 			if m.cursor < len(m.filtered)-1 {
@@ -362,7 +419,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "/":
 			m.filtering = true
 			m.filter = ""
-		case "esc":
+		case keyEsc:
 			if m.filter != "" {
 				m.filter = ""
 				m.applyFilter()
@@ -401,8 +458,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if r := m.selectedRow(); r != nil && r.RawCwd != "" {
 				if err := copyToClipboard(r.RawCwd); err == nil {
 					m.clipboardFlash = "Copied CWD!"
-					m.clipboardFlashEnd = time.Now().Add(2 * time.Second)
-					return m, tea.Tick(2*time.Second, func(_ time.Time) tea.Msg {
+					m.clipboardFlashEnd = time.Now().Add(clipboardFlashDuration)
+					return m, tea.Tick(clipboardFlashDuration, func(_ time.Time) tea.Msg {
 						return clipboardFlashMsg{}
 					})
 				}
@@ -421,9 +478,9 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case viewDetail:
 		switch key {
-		case "q", "esc", "backspace":
+		case "q", keyEsc, "backspace":
 			m.view = viewList
-		case "ctrl+c":
+		case keyCtrlC:
 			return m, tea.Quit
 		case "l":
 			if cmd := m.openLogs(viewDetail); cmd != nil {
@@ -433,9 +490,9 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case viewLogs:
 		switch key {
-		case "q", "esc":
+		case "q", keyEsc:
 			m.view = m.logFrom
-		case "ctrl+c":
+		case keyCtrlC:
 			return m, tea.Quit
 		case "j", "down":
 			visibleLines := m.logVisibleLines()
@@ -482,12 +539,12 @@ func (m *Model) sortRows() {
 		case SortByStatus:
 			less = string(m.rows[i].Status) < string(m.rows[j].Status)
 		case SortByCPU:
-			ci, _ := strconv.ParseFloat(m.rows[i].CPU, 64)
-			cj, _ := strconv.ParseFloat(m.rows[j].CPU, 64)
+			ci, _ := strconv.ParseFloat(m.rows[i].CPU, bitSize64)
+			cj, _ := strconv.ParseFloat(m.rows[j].CPU, bitSize64)
 			less = ci < cj
 		case SortByMem:
-			mi, _ := strconv.ParseFloat(m.rows[i].Mem, 64)
-			mj, _ := strconv.ParseFloat(m.rows[j].Mem, 64)
+			mi, _ := strconv.ParseFloat(m.rows[i].Mem, bitSize64)
+			mj, _ := strconv.ParseFloat(m.rows[j].Mem, bitSize64)
 			less = mi < mj
 		case SortByUptime:
 			less = m.rows[i].UptimeSec < m.rows[j].UptimeSec
@@ -526,23 +583,6 @@ func (m *Model) applyFilter() {
 	}
 }
 
-// View renders the TUI.
-func (m Model) View() string {
-	if m.width == 0 {
-		return "Loading..."
-	}
-
-	switch m.view {
-	case viewDetail:
-		return m.viewDetail()
-	case viewLogs:
-		return m.viewLogs()
-	default:
-		return m.viewList()
-	}
-}
-
-// selectedRow returns the currently selected row, if any.
 func (m Model) selectedRow() *display.Row {
 	if m.cursor >= 0 && m.cursor < len(m.filtered) {
 		return &m.filtered[m.cursor]

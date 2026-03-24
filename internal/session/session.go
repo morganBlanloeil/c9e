@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,7 +40,7 @@ func LoadAll() ([]Session, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("reading sessions directory: %w", err)
 	}
 
 	var sessions []Session
@@ -63,7 +64,7 @@ func LoadAll() ([]Session, error) {
 func sessionsDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("resolving home directory: %w", err)
 	}
 	return filepath.Join(home, ".claude", "sessions"), nil
 }

@@ -1,5 +1,6 @@
 [tools]
 go = "1.26"
+"go:github.com/golangci/golangci-lint/v2/cmd/golangci-lint" = "2.11.4"
 
 [env]
 BINARY_NAME = "c9e"
@@ -43,3 +44,15 @@ run = "go run ./cmd/c9e/"
 [tasks.test]
 description = "Run tests"
 run = "go test ./..."
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "golangci-lint run ./..."
+
+[tasks.lint-fix]
+description = "Run golangci-lint with auto-fix"
+run = "golangci-lint run --fix ./..."
+
+[tasks.check]
+description = "Run tests and lint"
+depends = ["test", "lint"]

@@ -1,18 +1,22 @@
 package terminal
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-// FocusByWorkdir finds a Ghostty terminal whose working directory matches
-// the given path and focuses it (switching to its tab/window).
-// Returns an error if Ghostty is not the current terminal or no match is found.
+var (
+	ErrNotGhostty  = errors.New("jump-to-terminal is only supported in Ghostty")
+	ErrNoTermFound = errors.New("no Ghostty terminal found for directory")
+)
+
 func FocusByWorkdir(cwd string) error {
 	if !IsGhostty() {
-		return fmt.Errorf("jump-to-terminal is only supported in Ghostty")
+		return ErrNotGhostty
 	}
 
 	expanded := ExpandHome(cwd)
@@ -25,21 +29,17 @@ func FocusByWorkdir(cwd string) error {
 
 	result := strings.TrimSpace(string(out))
 	if result == "no match" {
-		return fmt.Errorf("no Ghostty terminal found for directory: %s", cwd)
+		return fmt.Errorf("%w: %s", ErrNoTermFound, cwd)
 	}
 
 	return nil
 }
 
-// BuildFocusCommand creates the osascript command that finds and focuses
-// a Ghostty terminal by working directory. The cwd should already be expanded.
 func BuildFocusCommand(cwd string) *exec.Cmd {
 	script := BuildFocusScript(cwd)
-	return exec.Command("osascript", "-e", script)
+	return exec.CommandContext(context.Background(), "osascript", "-e", script)
 }
 
-// BuildFocusScript returns the AppleScript source that finds a Ghostty
-// terminal whose working directory contains cwd and focuses it.
 func BuildFocusScript(cwd string) string {
 	return fmt.Sprintf(`tell application "Ghostty"
 	set matches to every terminal whose working directory contains %q
@@ -52,7 +52,6 @@ func BuildFocusScript(cwd string) string {
 end tell`, cwd)
 }
 
-// ExpandHome replaces a leading ~ with the user's home directory.
 func ExpandHome(path string) string {
 	if strings.HasPrefix(path, "~") {
 		home, err := os.UserHomeDir()
@@ -63,7 +62,6 @@ func ExpandHome(path string) string {
 	return path
 }
 
-// IsGhostty checks if the current terminal is Ghostty.
 func IsGhostty() bool {
 	return os.Getenv("TERM_PROGRAM") == "ghostty"
 }
