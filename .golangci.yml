@@ -1,7 +1,4 @@
 version: "2"
-run:
-  exclude-dirs:
-    - .go
 output:
   formats:
     tab:
