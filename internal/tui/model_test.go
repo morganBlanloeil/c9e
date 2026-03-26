@@ -93,21 +93,21 @@ func TestNavigation_JDown(t *testing.T) {
 	}
 
 	// Move down
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 1 {
 		t.Errorf("cursor after j = %d, want 1", m.cursor)
 	}
 
 	// Move down again
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 2 {
 		t.Errorf("cursor after j j = %d, want 2", m.cursor)
 	}
 
 	// At bottom, should not go past
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 2 {
 		t.Errorf("cursor should stay at 2 at bottom, got %d", m.cursor)
@@ -118,14 +118,14 @@ func TestNavigation_KUp(t *testing.T) {
 	m := newTestModel(t)
 
 	// Move to bottom
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 2 {
 		t.Fatalf("cursor after G = %d, want 2", m.cursor)
 	}
 
 	// Move up
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 1 {
 		t.Errorf("cursor after k = %d, want 1", m.cursor)
@@ -136,11 +136,11 @@ func TestNavigation_GJumpTop(t *testing.T) {
 	m := newTestModel(t)
 
 	// Move down first
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	// Jump to top
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 0 {
 		t.Errorf("cursor after g = %d, want 0", m.cursor)
@@ -150,7 +150,7 @@ func TestNavigation_GJumpTop(t *testing.T) {
 func TestNavigation_GJumpBottom(t *testing.T) {
 	m := newTestModel(t)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 2 {
 		t.Errorf("cursor after G = %d, want 2", m.cursor)
@@ -160,7 +160,7 @@ func TestNavigation_GJumpBottom(t *testing.T) {
 func TestNavigation_KAtTopStays(t *testing.T) {
 	m := newTestModel(t)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 0 {
 		t.Errorf("cursor after k at top = %d, want 0", m.cursor)
@@ -171,7 +171,7 @@ func TestFilter_EnterAndType(t *testing.T) {
 	m := newTestModel(t)
 
 	// Enter filter mode
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if !m.filtering {
 		t.Fatal("expected filtering to be true after /")
@@ -181,14 +181,14 @@ func TestFilter_EnterAndType(t *testing.T) {
 	}
 
 	// Type 'b' to filter
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'b'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'b'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.filter != "b" {
 		t.Errorf("filter = %q, want %q", m.filter, "b")
 	}
 
 	// Type 'e'
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.filter != "be" {
 		t.Errorf("filter = %q, want %q", m.filter, "be")
@@ -200,7 +200,7 @@ func TestFilter_EnterAndType(t *testing.T) {
 	}
 
 	// Confirm with enter
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.filtering {
 		t.Error("filtering should be false after enter")
@@ -214,13 +214,13 @@ func TestFilter_EscClears(t *testing.T) {
 	m := newTestModel(t)
 
 	// Enter filter mode and type
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}, Alt: false, Paste: false})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	// Esc should clear filter
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.filtering {
 		t.Error("filtering should be false after esc")
@@ -237,18 +237,18 @@ func TestFilter_Backspace(t *testing.T) {
 	m := newTestModel(t)
 
 	// Enter filter mode and type "ab"
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}, Alt: false, Paste: false})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}, Alt: false, Paste: false})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'b'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'b'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.filter != "ab" {
 		t.Fatalf("filter = %q, want %q", m.filter, "ab")
 	}
 
 	// Backspace
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.filter != "a" {
 		t.Errorf("filter after backspace = %q, want %q", m.filter, "a")
@@ -263,14 +263,14 @@ func TestSort_CycleColumn(t *testing.T) {
 	}
 
 	// Press 's' to cycle
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.sortCol != SortByStatus {
 		t.Errorf("sortCol after s = %d, want SortByStatus (%d)", m.sortCol, SortByStatus)
 	}
 
 	// Press 's' again
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.sortCol != SortByCPU {
 		t.Errorf("sortCol after s s = %d, want SortByCPU (%d)", m.sortCol, SortByCPU)
@@ -285,14 +285,14 @@ func TestSort_ToggleDirection(t *testing.T) {
 	}
 
 	// Press 'S' to toggle
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.sortAsc {
 		t.Error("sortAsc should be false after S")
 	}
 
 	// Press 'S' again
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if !m.sortAsc {
 		t.Error("sortAsc should be true after S S")
@@ -307,7 +307,7 @@ func TestViewTransition_EnterDetail(t *testing.T) {
 	}
 
 	// Press enter to go to detail
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.view != viewDetail {
 		t.Errorf("view after enter = %d, want viewDetail (%d)", m.view, viewDetail)
@@ -318,11 +318,11 @@ func TestViewTransition_DetailBackToList(t *testing.T) {
 	m := newTestModel(t)
 
 	// Go to detail
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	// Press esc to go back
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.view != viewList {
 		t.Errorf("view after esc = %d, want viewList (%d)", m.view, viewList)
@@ -333,11 +333,11 @@ func TestViewTransition_DetailBackWithQ(t *testing.T) {
 	m := newTestModel(t)
 
 	// Go to detail
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	// Press q to go back
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.view != viewList {
 		t.Errorf("view after q in detail = %d, want viewList", m.view)
@@ -352,7 +352,7 @@ func TestViewTransition_EnterOnEmptyList(t *testing.T) {
 	m = updated.(Model)
 
 	// Press enter on empty list should stay in list view
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.view != viewList {
 		t.Errorf("view after enter on empty = %d, want viewList", m.view)
@@ -363,11 +363,11 @@ func TestDetailView_ShowsCorrectSession(t *testing.T) {
 	m := newTestModel(t)
 
 	// Move to second row
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	// Enter detail
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	r := m.selectedRow()
@@ -393,14 +393,14 @@ func TestLogView_ToggleFollow(t *testing.T) {
 	m.logFrom = viewList
 
 	// Toggle follow with 'f'
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if !m.logFollow {
 		t.Error("logFollow should be true after f")
 	}
 
 	// Toggle again
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.logFollow {
 		t.Error("logFollow should be false after f f")
@@ -414,14 +414,14 @@ func TestLogView_ToggleThinking(t *testing.T) {
 	m.logFrom = viewList
 
 	// Toggle thinking with 't'
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if !m.logShowThink {
 		t.Error("logShowThink should be true after t")
 	}
 
 	// Toggle again
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.logShowThink {
 		t.Error("logShowThink should be false after t t")
@@ -433,7 +433,7 @@ func TestLogView_EscGoesBack(t *testing.T) {
 	m.view = viewLogs
 	m.logFrom = viewDetail
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.view != viewDetail {
 		t.Errorf("view after esc in logs = %d, want viewDetail (%d)", m.view, viewDetail)
@@ -444,7 +444,7 @@ func TestKillConfirmation_DShowsConfirm(t *testing.T) {
 	m := newTestModel(t)
 
 	// Press 'd' to start kill confirm
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	if m.confirm == nil {
@@ -459,10 +459,10 @@ func TestKillConfirmation_NCancel(t *testing.T) {
 	m := newTestModel(t)
 
 	// Press 'd' then 'n'
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	if m.confirm != nil {
@@ -474,10 +474,10 @@ func TestKillConfirmation_EscCancel(t *testing.T) {
 	m := newTestModel(t)
 
 	// Press 'd' then esc
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	if m.confirm != nil {
@@ -489,11 +489,11 @@ func TestKillConfirmation_DOnDeadSession(t *testing.T) {
 	m := newTestModel(t)
 
 	// Move to third row (dead session)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	// Press 'd' on dead session should not trigger confirm
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	if m.confirm != nil {
@@ -593,24 +593,24 @@ func TestFilter_CursorAdjustsWhenFilteredListShrinks(t *testing.T) {
 	m := newTestModel(t)
 
 	// Move cursor to last row
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.cursor != 2 {
 		t.Fatalf("cursor after G = %d, want 2", m.cursor)
 	}
 
 	// Enter filter that matches only 1 row
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}, Alt: false, Paste: false})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}, Alt: false, Paste: false})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}, Alt: false, Paste: false})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'p'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'p'}, Alt: false, Paste: false})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}, Alt: false, Paste: false})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	// Cursor should be adjusted to fit the filtered list
@@ -675,7 +675,7 @@ func TestSort_RowOrderChanges(t *testing.T) {
 	}
 
 	// Toggle descending
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.filtered[0].PID != 3003 {
 		t.Errorf("first row PID after desc = %d, want 3003", m.filtered[0].PID)
@@ -686,13 +686,13 @@ func TestNotifyToggle(t *testing.T) {
 	m := newTestModel(t)
 	initial := m.notifyEnabled
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.notifyEnabled == initial {
 		t.Error("notifyEnabled should toggle after 'n'")
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	if m.notifyEnabled != initial {
 		t.Error("notifyEnabled should toggle back after second 'n'")
