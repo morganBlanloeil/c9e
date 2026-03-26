@@ -11,13 +11,15 @@ var (
 	green  = lipgloss.AdaptiveColor{Light: "#007A00", Dark: "#5FFF5F"}
 	yellow = lipgloss.AdaptiveColor{Light: "#806600", Dark: "#FFD700"}
 	red    = lipgloss.AdaptiveColor{Light: "#CC0000", Dark: "#FF5F5F"}
-	dim    = lipgloss.AdaptiveColor{Light: "#888888", Dark: "#6C6C6C"}
+	dim    = lipgloss.AdaptiveColor{Light: "#888888", Dark: "#9E9E9E"}
+	border = lipgloss.AdaptiveColor{Light: "#AAAAAA", Dark: "#606060"}
 	text   = lipgloss.AdaptiveColor{Light: "#1A1A1A", Dark: "#FAFAFA"}
-	purple = lipgloss.AdaptiveColor{Light: "#6A1B9A", Dark: "#AF87FF"}
+	muted  = lipgloss.AdaptiveColor{Light: "#555555", Dark: "#C0C0C0"}
+	purple = lipgloss.AdaptiveColor{Light: "#6A1B9A", Dark: "#D7AFFF"}
 
 	doneColor = lipgloss.AdaptiveColor{Light: "#CC6600", Dark: "#FFB347"}
 
-	selectedBg = lipgloss.AdaptiveColor{Light: "#D0D0D0", Dark: "#303030"}
+	selectedBg = lipgloss.AdaptiveColor{Light: "#D0D0D0", Dark: "#4A4A4A"}
 	selectedFg = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
 
 	doneBg = lipgloss.AdaptiveColor{Light: "#FFF3E0", Dark: "#3D2800"}
@@ -61,9 +63,15 @@ var (
 	// Done summary count
 	doneCountStyle = lipgloss.NewStyle().Foreground(doneColor).Bold(true)
 
+	// Separator lines
+	borderStyle = lipgloss.NewStyle().Foreground(border)
+
+	// Muted style (brighter than dim, for secondary content like CWD)
+	mutedStyle = lipgloss.NewStyle().Foreground(muted)
+
 	// Footer / help bar
 	helpStyle = lipgloss.NewStyle().
-			Foreground(dim).
+			Foreground(muted).
 			Padding(0, 1)
 
 	// Detail view
