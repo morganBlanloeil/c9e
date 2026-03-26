@@ -16,11 +16,12 @@ A terminal dashboard for monitoring running Claude Code instances — like [k9s]
 - **Jump to terminal** — switch focus to a session's Ghostty terminal tab (`o` key, Ghostty only)
 - **Done-row highlight** — when a session finishes, the row gets a golden highlight for 30 seconds
 - **Desktop notifications** — get notified when a session completes (toggle with `n`)
-- **Column sorting** — cycle sort column (`s`) and toggle direction (`S`)
-- **Cost tracking** — per-session cost estimates with color coding (green/yellow/red)
+- **Column sorting** — sort by any column with ascending/descending toggle (`s`/`S`)
+- **Cost tracking** — per-session USD cost estimates with color coding (green/yellow/red)
 - **Copy CWD** — copy a session's working directory to clipboard (`c`)
-- **Filter** — search by directory, status, or last action
+- **Filter** — search by directory, status, or last action (`/`)
 - **Turn counter** — track conversation turns per session
+- **Agent tracking** — monitor active sub-agent processes per session
 - **Aggregate stats** — total CPU, memory, and session counts in the footer
 - **Adaptive colors** — works in both light and dark terminal themes
 - **Multiple output modes** — TUI (default), static table, or JSON
@@ -143,6 +144,7 @@ If stdout is not a TTY (e.g., piped), the dashboard automatically falls back to 
 | PID | Process ID of the Claude Code instance |
 | STATUS | Session status (see below) |
 | TURNS | Number of conversation turns (user messages) |
+| AGENTS | Number of active sub-agent processes spawned by the session |
 | CPU% | Current CPU usage |
 | MEM% | Current memory usage |
 | COST | Estimated session cost in USD (color-coded: green < $0.10, yellow $0.10–$1.00, red > $1.00) |
