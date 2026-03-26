@@ -46,9 +46,14 @@ func ResolvePath(sessionID, cwd string) string {
 	if err != nil {
 		return ""
 	}
+	return ResolvePathWithHome(sessionID, cwd, home)
+}
+
+// ResolvePathWithHome constructs the JSONL path for a session using the given home directory.
+func ResolvePathWithHome(sessionID, cwd, homeDir string) string {
 	slug := strings.ReplaceAll(cwd, "/", "-")
 	slug = strings.ReplaceAll(slug, ".", "-")
-	return filepath.Join(home, ".claude", "projects", slug, sessionID+".jsonl")
+	return filepath.Join(homeDir, ".claude", "projects", slug, sessionID+".jsonl")
 }
 
 // ReadTail reads the last n entries from a JSONL file.

@@ -1,0 +1,39 @@
+   Session aabbccdd — PID 1001 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Status          ● ACTIVE  
+  PID             1001
+  Session ID      aabbccdd
+  Directory       /home/user/repos/project-alpha
+  CPU             12.3%
+  Memory          4.5%
+  Uptime          1h 0m
+  Idle            30s
+  Turns           5
+  Cost            $0.42 (in: 50.0K, out: 10.0K)
+  Model           claude-sonnet-4-20250514
+  Last Action     implement feature X
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   esc/q: back to list  l: logs  ctrl+c: quit 

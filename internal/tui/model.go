@@ -103,6 +103,9 @@ type Model struct {
 	logShowThink bool
 	logErr       error
 	logFrom      viewMode // view to return to on esc
+
+	// Configurable home directory for data sources (default: os.UserHomeDir())
+	homeDir string
 }
 
 // confirmAction holds a pending action requiring user confirmation.
@@ -174,7 +177,15 @@ func NewModel(version string) Model {
 		logShowThink:      false,
 		logErr:            nil,
 		logFrom:           viewList,
+		homeDir:           "",
 	}
+}
+
+// WithHomeDir returns a copy of the model with the given home directory
+// for loading session data. Used for testing.
+func (m Model) WithHomeDir(dir string) Model {
+	m.homeDir = dir
+	return m
 }
 
 // tickMsg triggers a data refresh.
@@ -211,16 +222,16 @@ func doTick() tea.Cmd {
 	})
 }
 
-func fetchDataCmd() tea.Cmd {
+func fetchDataCmd(homeDir string) tea.Cmd {
 	return func() tea.Msg {
-		rows, err := fetchRows()
+		rows, err := fetchRows(homeDir)
 		return dataMsg{rows: rows, err: err}
 	}
 }
 
 // Init starts the initial data fetch and tick timer.
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(fetchDataCmd(), doTick())
+	return tea.Batch(fetchDataCmd(m.homeDir), doTick())
 }
 
 // Update handles messages.
@@ -231,7 +242,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 	case tickMsg:
-		cmds := []tea.Cmd{fetchDataCmd(), doTick()}
+		cmds := []tea.Cmd{fetchDataCmd(m.homeDir), doTick()}
 		if m.view == viewLogs && m.logPath != "" {
 			cmds = append(cmds, fetchLogCmd(m.logPath, m.logOffset, false))
 		}
@@ -312,7 +323,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 		}
 		m.confirm = nil
-		return m, fetchDataCmd()
+		return m, fetchDataCmd(m.homeDir)
 
 	case tea.KeyMsg:
 		return m.handleKey(msg)

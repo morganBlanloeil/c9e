@@ -1,0 +1,2 @@
+# Golden test files contain ANSI codes and Unicode — preserve as-is
+*.golden -text

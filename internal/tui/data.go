@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/wescale/claude-dashboard/internal/cost"
@@ -14,14 +15,33 @@ import (
 
 const roleAssistant = "assistant"
 
+// resolveHomeDir returns the effective home directory for data loading.
+// If homeDir is empty, it falls back to os.UserHomeDir().
+func resolveHomeDir(homeDir string) (string, error) {
+	if homeDir != "" {
+		return homeDir, nil
+	}
+	h, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolving home directory: %w", err)
+	}
+	return h, nil
+}
+
 // fetchRows collects all session data and returns display rows.
-func fetchRows() ([]display.Row, error) {
-	sessions, err := session.LoadAll()
+// If homeDir is empty, it defaults to the real user home directory.
+func fetchRows(homeDir string) ([]display.Row, error) {
+	home, err := resolveHomeDir(homeDir)
+	if err != nil {
+		return nil, err
+	}
+
+	sessions, err := session.LoadAllFrom(home)
 	if err != nil {
 		return nil, fmt.Errorf("loading sessions: %w", err)
 	}
 
-	actions, err := history.LastActions()
+	actions, err := history.LastActionsFrom(home)
 	if err != nil {
 		return nil, fmt.Errorf("loading history: %w", err)
 	}
@@ -57,7 +77,7 @@ func fetchRows() ([]display.Row, error) {
 			}
 		}
 
-		logPath := logs.ResolvePath(s.SessionID, s.Cwd)
+		logPath := logs.ResolvePathWithHome(s.SessionID, s.Cwd, home)
 
 		status := display.StatusActive
 		switch {
