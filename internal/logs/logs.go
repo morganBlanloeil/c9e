@@ -21,12 +21,11 @@ const (
 )
 
 const (
-	roleUser         = "user"
-	roleAssistant    = "assistant"
-	scannerBufSize   = 512 * 1024
-	readTailSize     = 1024 * 1024
-	lastRoleTailSize = 64 * 1024
-	maxSummaryLen    = 120
+	roleUser       = "user"
+	roleAssistant  = "assistant"
+	scannerBufSize = 512 * 1024
+	readTailSize   = 1024 * 1024
+	maxSummaryLen  = 120
 )
 
 // LogEntry is a parsed line from a session JSONL file.
@@ -36,6 +35,20 @@ type LogEntry struct {
 	RawType   string // original "type" field from JSONL
 	Summary   string // human-readable summary
 	HasThink  bool   // true if this is a thinking block
+}
+
+// ActiveWriteThreshold is the maximum age of a JSONL file modification
+// for the session to be considered actively writing (Claude generating).
+const ActiveWriteThreshold = 10 * time.Second
+
+// IsRecentlyModified reports whether the file at path was modified within
+// the given threshold. This indicates Claude is actively writing to the log.
+func IsRecentlyModified(path string, threshold time.Duration) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return time.Since(info.ModTime()) < threshold
 }
 
 // ResolvePath constructs the JSONL path for a session.
@@ -125,53 +138,6 @@ func ReadFrom(path string, offset int64) (entries []LogEntry, newOffset int64, e
 
 	entries = scanEntries(f)
 	return entries, info.Size(), nil
-}
-
-// LastRole returns the role ("user" or "assistant") of the last message in a
-// session JSONL file. It reads only the tail of the file for performance.
-// Returns empty string if the file cannot be read or has no valid entries.
-func LastRole(path string) string {
-	f, err := os.Open(path)
-	if err != nil {
-		return ""
-	}
-	defer func() { _ = f.Close() }()
-
-	info, err := f.Stat()
-	if err != nil {
-		return ""
-	}
-
-	// Read last 64KB — enough to find the last message
-	if info.Size() > lastRoleTailSize {
-		if _, err := f.Seek(-lastRoleTailSize, io.SeekEnd); err != nil {
-			return ""
-		}
-		// Skip partial first line
-		reader := bufio.NewReader(f)
-		_, _ = reader.ReadString('\n')
-		return scanLastRole(reader)
-	}
-
-	return scanLastRole(bufio.NewReader(f))
-}
-
-// scanLastRole reads JSONL lines and returns the "type" field of the last
-// user or assistant message.
-func scanLastRole(r io.Reader) string {
-	var lastRole string
-	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, scannerBufSize), scannerBufSize)
-	for scanner.Scan() {
-		var line jsonLine
-		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
-			continue
-		}
-		if line.Type == roleUser || line.Type == roleAssistant {
-			lastRole = line.Type
-		}
-	}
-	return lastRole
 }
 
 func scanEntries(r io.Reader) []LogEntry {

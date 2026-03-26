@@ -20,12 +20,7 @@ A terminal dashboard for monitoring running Claude Code instances — like [k9s]
 - **Cost tracking** — per-session cost estimates with color coding (green/yellow/red)
 - **Copy CWD** — copy a session's working directory to clipboard (`c`)
 - **Filter** — search by directory, status, or last action
-- **Column sorting** — sort by any column with ascending/descending toggle
-- **Log tail view** — stream conversation logs with follow mode and thinking toggle
-- **Cost estimation** — per-session USD cost based on token usage (color-coded)
 - **Turn counter** — track conversation turns per session
-- **Desktop notifications** — get notified when a session completes (macOS)
-- **Copy to clipboard** — quickly copy a session's working directory
 - **Aggregate stats** — total CPU, memory, and session counts in the footer
 - **Adaptive colors** — works in both light and dark terminal themes
 - **Multiple output modes** — TUI (default), static table, or JSON
@@ -150,7 +145,7 @@ If stdout is not a TTY (e.g., piped), the dashboard automatically falls back to 
 | TURNS | Number of conversation turns (user messages) |
 | CPU% | Current CPU usage |
 | MEM% | Current memory usage |
-| COST | Estimated session cost in USD (color-coded: green < $0.10, yellow < $1, red >= $1) |
+| COST | Estimated session cost in USD (color-coded: green < $0.10, yellow $0.10–$1.00, red > $1.00) |
 | UPTIME | Time since the instance was started |
 | IDLE | Time since the last user message |
 | DIRECTORY | Working directory of the instance |
@@ -160,8 +155,8 @@ If stdout is not a TTY (e.g., piped), the dashboard automatically falls back to 
 
 | Status | Icon | Meaning |
 |--------|------|---------|
-| ACTIVE | `●` | Interaction within the last 5 minutes |
-| WAITING | `◇` | Claude has responded and is awaiting user input, or session has active agent subprocesses |
+| ACTIVE | `●` | Interaction within the last 5 minutes, or actively generating output |
+| WAITING | `◇` | Session has active agent subprocesses |
 | IDLE | `◐` | No interaction for more than 5 minutes |
 | DEAD | `○` | Session file exists but process is gone |
 | DONE | `★` | Task recently completed (30-second highlight) |
@@ -175,7 +170,7 @@ The dashboard reads from Claude Code's local state files:
 | `~/.claude/sessions/*.json` | Session metadata (PID, working directory, start time) |
 | `~/.claude/history.jsonl` | User action log (last message per session) |
 | `~/.claude/projects/{slug}/{sessionID}.jsonl` | Full conversation logs (turns, cost, token usage, log tail) |
-| `ps aux` | Live process stats (CPU, memory, alive check) |
+| `ps -eo pid,ppid,%cpu,%mem,args` | Live process stats (CPU, memory, alive check, process tree) |
 
 > **Note:** These are undocumented Claude Code internal files and may change between versions.
 

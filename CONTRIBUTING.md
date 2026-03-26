@@ -471,9 +471,9 @@ The `idle` duration is calculated as `now - last_action_timestamp`. A session wi
 
 **Code:** `internal/history/history.go`
 
-#### Process stats — `ps aux`
+#### Process stats — `ps -eo pid,ppid,%cpu,%mem,args`
 
-Live CPU and memory usage is obtained by running `ps aux` and filtering lines that contain `claude` (excluding `Claude.app` desktop processes). The PID from `ps` is matched against session files to determine if a session is alive.
+Live CPU and memory usage is obtained by running `ps -eo pid,ppid,%cpu,%mem,args` and filtering lines that contain `claude` (excluding `Claude.app` desktop processes). The PID from `ps` is matched against session files to determine if a session is alive. The PPID (parent PID) is used to build a process tree for detecting agent subprocesses.
 
 A process is identified as a Claude Code CLI instance if:
 
@@ -490,7 +490,7 @@ The dashboard uses conversation logs for:
 
 - **Turn count** — number of user messages in the session
 - **Cost estimation** — token usage data is extracted to estimate per-session cost
-- **WAITING status** — if the last log entry's role is "assistant", the session is marked as waiting for user input; also set when the session has active agent subprocesses (even if idle for >5 minutes)
+- **ACTIVE status (mtime)** — a session stays ACTIVE when its log file was recently modified (within 10 seconds), even if the last user message is older than 5 minutes, indicating Claude is actively generating output
 - **Log tail view** — streams the conversation log with follow mode and thinking toggle
 
 **Code:** `internal/logs/logs.go`, `internal/cost/cost.go`
