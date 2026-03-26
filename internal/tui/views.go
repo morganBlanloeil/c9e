@@ -42,7 +42,7 @@ func (m Model) viewList() string {
 	b.WriteString(title + ver + "\n")
 
 	// Separator
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Summary counts
 	active, waiting, idle, dead := 0, 0, 0, 0
@@ -92,7 +92,7 @@ func (m Model) viewList() string {
 	}
 
 	// Separator
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Sort indicator
 	sortInfo := dimStyle.Render("  sort: " + sortColumnNames[m.sortCol])
@@ -107,7 +107,7 @@ func (m Model) viewList() string {
 		"PID", "STATUS", "TURNS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION")
 	headerLine := headerStyle.Render(header)
 	b.WriteString(headerLine + "  " + sortInfo + "\n")
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Rows
 	visibleRows := max(1, m.height-listFixedLines)
@@ -140,7 +140,7 @@ func (m Model) viewList() string {
 	}
 
 	// Footer
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Aggregate stats bar
 	var totalCPU, totalMem float64
@@ -152,7 +152,7 @@ func (m Model) viewList() string {
 	}
 	stats := fmt.Sprintf("  %d sessions  |  CPU: %.1f%%  MEM: %.1f%%  |  %d active  %d idle  %d dead",
 		len(m.rows), totalCPU, totalMem, active, idle, dead)
-	b.WriteString(dimStyle.Render(stats) + "\n")
+	b.WriteString(mutedStyle.Render(stats) + "\n")
 
 	if m.err != nil {
 		b.WriteString(deadBadge.Render(fmt.Sprintf("  error: %v", m.err)) + "\n")
@@ -203,7 +203,7 @@ func (m Model) renderRow(r display.Row) string {
 	// Using fmt.Sprintf width specifiers on ANSI-styled strings breaks alignment
 	// because Go counts invisible escape codes as part of the string width.
 	return fmt.Sprintf("  %s %-6d  %s  %s  %5s  %5s  %s  %s  %s  %s  %s",
-		icon, r.PID, status, turns, r.CPU, r.Mem, costStr, uptime, idle, dimStyle.Render(cwd), action)
+		icon, r.PID, status, turns, r.CPU, r.Mem, costStr, uptime, idle, mutedStyle.Render(cwd), action)
 }
 
 func (m Model) viewDetail() string {
@@ -217,7 +217,7 @@ func (m Model) viewDetail() string {
 	// Title
 	title := detailTitleStyle.Render(fmt.Sprintf("  Session %s — PID %d", r.SessionID, r.PID))
 	b.WriteString(title + "\n")
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n\n")
 
 	// Fields
 	costDisplay := emDash
@@ -276,7 +276,7 @@ func (m Model) viewDetail() string {
 	}
 
 	// Footer
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
 	b.WriteString(helpStyle.Render("  esc/q: back to list  l: logs  ctrl+c: quit"))
 
 	return b.String()
@@ -391,7 +391,7 @@ func (m Model) viewLogs() string {
 	}
 	title := detailTitleStyle.Render("  Log Tail — Session " + sid)
 	b.WriteString(title + "\n")
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Status bar
 	followStr := logFollowOff.Render("OFF")
@@ -406,7 +406,7 @@ func (m Model) viewLogs() string {
 	statusLine := fmt.Sprintf("  %d entries  follow: %s  thinking: %s",
 		len(m.logFiltered), followStr, thinkStr)
 	b.WriteString(statusLine + "\n")
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
 
 	// Log entries
 	visibleLines := m.logVisibleLines()
@@ -430,7 +430,7 @@ func (m Model) viewLogs() string {
 	}
 
 	// Footer
-	b.WriteString(dimStyle.Render(strings.Repeat("─", m.width)) + "\n")
+	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
 	b.WriteString(helpStyle.Render("  j/k: scroll  G: bottom  g: top  f: follow  t: thinking  esc: back"))
 
 	return b.String()
