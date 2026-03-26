@@ -123,22 +123,6 @@ func writeHistoryFile(t *testing.T, homeDir string, lines []string) {
 	}
 }
 
-// writeLogFile creates a session JSONL log file in the temp dir.
-func writeLogFile(t *testing.T, homeDir, sessionID, cwd string, lines []string) {
-	t.Helper()
-	slug := strings.ReplaceAll(cwd, "/", "-")
-	slug = strings.ReplaceAll(slug, ".", "-")
-	dir := filepath.Join(homeDir, ".claude", "projects", slug)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	content := strings.Join(lines, "\n") + "\n"
-	path := filepath.Join(dir, sessionID+".jsonl")
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
 // setupFakeClaudeHome creates a temp dir with fake Claude session data
 // and returns the home directory path. The data simulates two sessions:
 // one active and one dead (not matching any real PID).

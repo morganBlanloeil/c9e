@@ -32,7 +32,7 @@ func TestGolden_ListView(t *testing.T) {
 
 func TestGolden_DetailView(t *testing.T) {
 	m := newTestModel(t)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 	golden.RequireEqual(t, []byte(m.View()))
 }
@@ -48,10 +48,10 @@ func TestGolden_EmptyList(t *testing.T) {
 
 func TestGolden_FilterActive(t *testing.T) {
 	m := newTestModel(t)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	for _, ch := range "alpha" {
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
+		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}, Alt: false, Paste: false})
 		m = updated.(Model)
 	}
 	golden.RequireEqual(t, []byte(m.View()))
@@ -59,7 +59,7 @@ func TestGolden_FilterActive(t *testing.T) {
 
 func TestGolden_ConfirmKill(t *testing.T) {
 	m := newTestModel(t)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	golden.RequireEqual(t, []byte(m.View()))
 }
@@ -76,7 +76,7 @@ func TestGolden_LogView(t *testing.T) {
 func TestGolden_SortDescending(t *testing.T) {
 	m := newTestModel(t)
 	// Toggle sort descending
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	golden.RequireEqual(t, []byte(m.View()))
 }
@@ -98,7 +98,7 @@ func TestTeatest_ListViewPipeline(t *testing.T) {
 	}, teatest.WithDuration(5*time.Second))
 
 	// Quit the program
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}, Alt: false, Paste: false})
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
 }
 
@@ -114,7 +114,7 @@ func TestTeatest_NavigateToDetail(t *testing.T) {
 	}, teatest.WithDuration(5*time.Second))
 
 	// Navigate to detail view
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 
 	// Should show detail view content
 	teatest.WaitFor(t, tm.Output(), func(bts []byte) bool {
@@ -123,8 +123,8 @@ func TestTeatest_NavigateToDetail(t *testing.T) {
 	}, teatest.WithDuration(3*time.Second))
 
 	// Go back and quit
-	tm.Send(tea.KeyMsg{Type: tea.KeyEsc})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEsc, Runes: nil, Alt: false, Paste: false})
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}, Alt: false, Paste: false})
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
 }
 
@@ -140,9 +140,9 @@ func TestTeatest_FilterSessions(t *testing.T) {
 	}, teatest.WithDuration(5*time.Second))
 
 	// Filter for "project-one"
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}, Alt: false, Paste: false})
 	tm.Type("project-one")
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 
 	// Should show filtered results — only project-one visible
 	teatest.WaitFor(t, tm.Output(), func(bts []byte) bool {
@@ -151,7 +151,7 @@ func TestTeatest_FilterSessions(t *testing.T) {
 			!strings.Contains(s, "project-two")
 	}, teatest.WithDuration(3*time.Second))
 
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}, Alt: false, Paste: false})
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
 }
 
@@ -161,7 +161,7 @@ func TestTeatest_FilterSessions(t *testing.T) {
 
 func TestView_DetailFields(t *testing.T) {
 	m := newTestModel(t)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter, Runes: nil, Alt: false, Paste: false})
 	m = updated.(Model)
 
 	view := stripANSI(m.View())
@@ -217,7 +217,7 @@ func TestView_SortIndicator(t *testing.T) {
 		t.Error("view should show sort indicator for PID")
 	}
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}, Alt: false, Paste: false})
 	m = updated.(Model)
 	view = stripANSI(m.View())
 	if !strings.Contains(view, "sort: STATUS") {
