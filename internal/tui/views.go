@@ -103,8 +103,8 @@ func (m Model) viewList() string {
 	}
 
 	// Header with sort indicator on the right
-	header := fmt.Sprintf("  %-6s  %-8s  %5s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s",
-		"PID", "STATUS", "TURNS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION")
+	header := fmt.Sprintf("  %-6s  %-8s  %5s  %6s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s",
+		"PID", "STATUS", "TURNS", "AGENTS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION")
 	headerLine := headerStyle.Render(header)
 	b.WriteString(headerLine + "  " + sortInfo + "\n")
 	b.WriteString(borderStyle.Render(strings.Repeat("─", m.width)) + "\n")
@@ -199,11 +199,16 @@ func (m Model) renderRow(r display.Row) string {
 		costStr = styledCost(r.CostValue).Render(fmt.Sprintf("%8s", r.Cost))
 	}
 
+	agentStr := fmt.Sprintf("%6s", emDash)
+	if r.AgentCount > 0 {
+		agentStr = agentCountStyle.Render(fmt.Sprintf("%6d", r.AgentCount))
+	}
+
 	// Build row by concatenating styled strings with literal spacing.
 	// Using fmt.Sprintf width specifiers on ANSI-styled strings breaks alignment
 	// because Go counts invisible escape codes as part of the string width.
-	return fmt.Sprintf("  %s %-6d  %s  %s  %5s  %5s  %s  %s  %s  %s  %s",
-		icon, r.PID, status, turns, r.CPU, r.Mem, costStr, uptime, idle, mutedStyle.Render(cwd), action)
+	return fmt.Sprintf("  %s %-6d  %s  %s  %s  %5s  %5s  %s  %s  %s  %s  %s",
+		icon, r.PID, status, turns, agentStr, r.CPU, r.Mem, costStr, uptime, idle, mutedStyle.Render(cwd), action)
 }
 
 func (m Model) viewDetail() string {
@@ -250,6 +255,7 @@ func (m Model) viewDetail() string {
 		{"Uptime", formatDuration(r.UptimeSec)},
 		{"Idle", formatIdle(r.IdleSec)},
 		{"Turns", strconv.Itoa(r.Turns)},
+		{"Agents", strconv.Itoa(r.AgentCount)},
 		{costLabel, costDisplay + tokenInfo},
 		{"Model", modelDisplay},
 		{"Last Action", display.CleanAction(r.LastAction)},

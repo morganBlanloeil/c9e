@@ -202,6 +202,11 @@ func runStatic(jsonOutput bool) error {
 			}
 		}
 
+		agentCount := 0
+		if alive {
+			agentCount = process.CountClaudeChildren(s.PID, procs)
+		}
+
 		rows = append(rows, display.Row{
 			PID:           s.PID,
 			SessionID:     s.SessionID[:sessionIDShortLen],
@@ -223,6 +228,7 @@ func runStatic(jsonOutput bool) error {
 			OutputTokens:  outputTokens,
 			CostModel:     costModel,
 			HasUsageData:  hasUsageData,
+			AgentCount:    agentCount,
 		})
 	}
 

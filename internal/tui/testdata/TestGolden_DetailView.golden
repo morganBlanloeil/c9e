@@ -10,10 +10,10 @@
   Uptime          1h 0m
   Idle            30s
   Turns           5
+  Agents          0
   Cost            $0.42 (in: 50.0K, out: 10.0K)
   Model           claude-sonnet-4-20250514
   Last Action     implement feature X
-
 
 
 

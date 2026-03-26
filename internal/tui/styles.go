@@ -113,6 +113,9 @@ var (
 	logFollowOn   = lipgloss.NewStyle().Foreground(green).Bold(true)
 	logFollowOff  = lipgloss.NewStyle().Foreground(dim)
 
+	// Agent count style
+	agentCountStyle = lipgloss.NewStyle().Foreground(cyan).Bold(true)
+
 	// Notification styles
 	notifyOnStyle    = lipgloss.NewStyle().Foreground(green).Bold(true)
 	notifyOffStyle   = lipgloss.NewStyle().Foreground(dim)

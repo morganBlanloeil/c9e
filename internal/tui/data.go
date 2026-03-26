@@ -117,6 +117,11 @@ func fetchRows(homeDir string) ([]display.Row, error) {
 			}
 		}
 
+		agentCount := 0
+		if alive {
+			agentCount = process.CountClaudeChildren(s.PID, procs)
+		}
+
 		rows = append(rows, display.Row{
 			PID:           s.PID,
 			SessionID:     sid,
@@ -138,6 +143,7 @@ func fetchRows(homeDir string) ([]display.Row, error) {
 			OutputTokens:  outputTokens,
 			CostModel:     costModel,
 			HasUsageData:  hasUsageData,
+			AgentCount:    agentCount,
 		})
 	}
 

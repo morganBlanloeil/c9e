@@ -134,6 +134,19 @@ func isDescendantOf(child, ancestor int, tree ProcessTree) bool {
 	}
 }
 
+// CountClaudeChildren returns the number of Claude Code processes that are
+// children of the given pid. Sub-agents spawned by a session appear as
+// separate claude processes whose PPID is the session's PID.
+func CountClaudeChildren(pid int, procs map[int]Info) int {
+	count := 0
+	for _, p := range procs {
+		if p.PPID == pid {
+			count++
+		}
+	}
+	return count
+}
+
 // Kill sends SIGTERM to a process.
 func Kill(pid int) error {
 	cmd := exec.CommandContext(context.Background(), "kill", strconv.Itoa(pid))

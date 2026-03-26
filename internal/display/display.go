@@ -73,6 +73,7 @@ type Row struct {
 	OutputTokens  int64   `json:"output_tokens,omitempty"`
 	CostModel     string  `json:"cost_model,omitempty"`
 	HasUsageData  bool    `json:"has_usage_data"`
+	AgentCount    int     `json:"agent_count"`
 }
 
 // RenderTable prints the dashboard table to stdout.
@@ -107,8 +108,8 @@ func RenderTable(rows []Row) {
 	fmt.Println()
 	printSep()
 
-	fmt.Printf("  %s%-6s  %-8s  %5s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s%s\n",
-		ansiDim, "PID", "STATUS", "TURNS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION", ansiReset)
+	fmt.Printf("  %s%-6s  %-8s  %5s  %6s  %5s  %5s  %8s  %-10s  %-9s  %-40s  %s%s\n",
+		ansiDim, "PID", "STATUS", "TURNS", "AGENTS", "CPU%", "MEM%", "COST", "UPTIME", "IDLE", "DIRECTORY", "LAST ACTION", ansiReset)
 	printSep()
 
 	for _, r := range rows {
@@ -125,11 +126,17 @@ func RenderTable(rows []Row) {
 			costStr = emDash
 		}
 
-		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5d  %5s  %5s  %8s  %-10s  %-9s  %s%-40s%s  %s\n",
+		agentStr := emDash
+		if r.AgentCount > 0 {
+			agentStr = fmt.Sprintf("%d", r.AgentCount)
+		}
+
+		fmt.Printf("  %s%s%s %s%-6d%s  %s%-8s%s  %5d  %6s  %5s  %5s  %8s  %-10s  %-9s  %s%-40s%s  %s\n",
 			statusColor, icon, ansiReset,
 			"", r.PID, "",
 			statusColor, r.Status, ansiReset,
 			r.Turns,
+			agentStr,
 			r.CPU, r.Mem,
 			costStr,
 			uptime, idle,

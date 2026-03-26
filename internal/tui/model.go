@@ -33,12 +33,13 @@ const (
 	SortByDir
 	SortByAction
 	SortByTurns
+	SortByAgents
 )
 
 // ErrUnsupportedOS is returned when the OS does not support clipboard operations.
 var ErrUnsupportedOS = errors.New("unsupported OS for clipboard")
 
-var sortColumnNames = []string{"PID", "STATUS", "CPU%", "MEM%", "UPTIME", "IDLE", "DIR", "ACTION", "TURNS"}
+var sortColumnNames = []string{"PID", "STATUS", "CPU%", "MEM%", "UPTIME", "IDLE", "DIR", "ACTION", "TURNS", "AGENTS"}
 
 const (
 	refreshInterval        = 3 * time.Second
@@ -456,7 +457,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.notifyEnabled = !m.notifyEnabled
 		case "s":
 			// Cycle sort column forward
-			m.sortCol = (m.sortCol + 1) % (SortByTurns + 1)
+			m.sortCol = (m.sortCol + 1) % (SortByAgents + 1)
 			m.sortRows()
 			m.applyFilter()
 		case "S":
@@ -567,6 +568,8 @@ func (m *Model) sortRows() {
 			less = strings.ToLower(m.rows[i].LastAction) < strings.ToLower(m.rows[j].LastAction)
 		case SortByTurns:
 			less = m.rows[i].Turns < m.rows[j].Turns
+		case SortByAgents:
+			less = m.rows[i].AgentCount < m.rows[j].AgentCount
 		}
 		if !asc {
 			return !less
