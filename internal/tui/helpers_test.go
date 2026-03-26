@@ -36,6 +36,7 @@ func fixtureRows() []display.Row {
 			OutputTokens:  10000,
 			CostModel:     "claude-sonnet-4-20250514",
 			HasUsageData:  true,
+		AgentCount:    0,
 		},
 		{
 			PID:           2002,
@@ -58,6 +59,7 @@ func fixtureRows() []display.Row {
 			OutputTokens:  30000,
 			CostModel:     "claude-sonnet-4-20250514",
 			HasUsageData:  true,
+		AgentCount:    0,
 		},
 		{
 			PID:           3003,
@@ -80,6 +82,7 @@ func fixtureRows() []display.Row {
 			OutputTokens:  0,
 			CostModel:     "",
 			HasUsageData:  false,
+		AgentCount:    0,
 		},
 	}
 }
