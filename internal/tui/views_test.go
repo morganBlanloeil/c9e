@@ -39,6 +39,7 @@ func TestGolden_DetailView(t *testing.T) {
 
 func TestGolden_EmptyList(t *testing.T) {
 	m := NewModel("test")
+	m.notifyEnabled = false // deterministic across OS
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	m = updated.(Model)
 	updated, _ = m.Update(dataMsg{rows: nil, err: nil})

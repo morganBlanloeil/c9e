@@ -37,4 +37,4 @@
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   0 sessions  |  CPU: 0.0%  MEM: 0.0%  |  0 active  0 idle  0 dead
-   j/k: navigate  enter: detail  l: logs  o: jump  d: kill  /: filter  s/S: sort  c: copy cwd  n: notify ON  q: quit 
+   j/k: navigate  enter: detail  l: logs  o: jump  d: kill  /: filter  s/S: sort  c: copy cwd  n: notify OFF  q: quit 

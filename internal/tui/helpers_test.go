@@ -160,6 +160,8 @@ func setupFakeClaudeHome(t *testing.T) string {
 func newTestModel(t *testing.T) Model {
 	t.Helper()
 	m := NewModel("test")
+	// Force notify off for deterministic golden files across OS (macOS has it, Linux doesn't)
+	m.notifyEnabled = false
 	// Set dimensions
 	sized, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	m = sized.(Model)
