@@ -20,10 +20,17 @@ type Entry struct {
 // LastActions returns the most recent action per session ID.
 // It reads the tail of the history file for performance.
 func LastActions() (result map[string]Entry, err error) {
-	path, err := historyPath()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolving home directory: %w", err)
 	}
+	return LastActionsFrom(home)
+}
+
+// LastActionsFrom returns the most recent action per session ID,
+// reading from the history file under the given home directory.
+func LastActionsFrom(homeDir string) (result map[string]Entry, err error) {
+	path := filepath.Join(homeDir, ".claude", "history.jsonl")
 
 	f, err := os.Open(path)
 	if err != nil {
@@ -84,10 +91,3 @@ func scanEntries(r *bufio.Reader) (map[string]Entry, error) {
 	return result, nil
 }
 
-func historyPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolving home directory: %w", err)
-	}
-	return filepath.Join(home, ".claude", "history.jsonl"), nil
-}

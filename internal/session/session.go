@@ -28,12 +28,18 @@ func (s Session) ShortCwd() string {
 	return s.Cwd
 }
 
-// LoadAll reads all session files from the sessions directory.
+// LoadAll reads all session files from the default sessions directory (~/.claude/sessions/).
 func LoadAll() ([]Session, error) {
-	dir, err := sessionsDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolving home directory: %w", err)
 	}
+	return LoadAllFrom(home)
+}
+
+// LoadAllFrom reads all session files from the sessions directory under the given home dir.
+func LoadAllFrom(homeDir string) ([]Session, error) {
+	dir := filepath.Join(homeDir, ".claude", "sessions")
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -59,12 +65,4 @@ func LoadAll() ([]Session, error) {
 		sessions = append(sessions, s)
 	}
 	return sessions, nil
-}
-
-func sessionsDir() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolving home directory: %w", err)
-	}
-	return filepath.Join(home, ".claude", "sessions"), nil
 }
