@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/wescale/claude-dashboard/internal/display"
+	"github.com/morganBlanloeil/c9e/internal/display"
 )
 
 func TestNewModel_Initialization(t *testing.T) {

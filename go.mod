@@ -1,4 +1,4 @@
-module github.com/wescale/claude-dashboard
+module github.com/morganBlanloeil/c9e
 
 go 1.26.1
 

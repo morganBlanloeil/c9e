@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/x/exp/golden"
 	"github.com/charmbracelet/x/exp/teatest"
 
-	"github.com/wescale/claude-dashboard/internal/display"
+	"github.com/morganBlanloeil/c9e/internal/display"
 )
 
 // ansiRE strips ANSI escape sequences — used only for content assertions, not golden files.

@@ -9,7 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/wescale/claude-dashboard/internal/display"
+	"github.com/morganBlanloeil/c9e/internal/display"
 )
 
 // fixtureRows returns deterministic display.Row values for testing.

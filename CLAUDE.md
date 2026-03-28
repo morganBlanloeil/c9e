@@ -56,4 +56,4 @@ Reads Claude Code's undocumented local state (may change between versions):
 - `~/.claude/sessions/*.json` — session metadata
 - `~/.claude/history.jsonl` — user message log
 - `~/.claude/projects/{slug}/{sessionID}.jsonl` — full conversation logs (user, assistant, tool use, thinking)
-- `ps aux` — live process stats
+- `ps -eo pid,ppid,%cpu,%mem,args` — live process stats

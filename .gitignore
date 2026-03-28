@@ -1,13 +1,13 @@
+# Claude Code development artifacts
 .claude/logs/
 .claude/.last-doc-update
 .claude/.skip-doc-update
 .claude/worktrees/
-/claude-dashboard
 
 
 # Go build artifacts
 /dist/
-c9e
+/c9e
 *.exe
 *.dll
 *.so

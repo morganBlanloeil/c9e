@@ -8,9 +8,9 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/wescale/claude-dashboard/internal/cost"
-	"github.com/wescale/claude-dashboard/internal/display"
-	"github.com/wescale/claude-dashboard/internal/logs"
+	"github.com/morganBlanloeil/c9e/internal/cost"
+	"github.com/morganBlanloeil/c9e/internal/display"
+	"github.com/morganBlanloeil/c9e/internal/logs"
 )
 
 // Layout constants: fixed lines consumed by UI chrome.
