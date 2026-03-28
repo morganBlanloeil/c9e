@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/morganBlanloeil/c9e/compare/v1.4.0...v1.4.1) (2026-03-28)
+
+
+### Miscellaneous
+
+* prepare repository for open source release ([37e106e](https://github.com/morganBlanloeil/c9e/commit/37e106e8e4438cfa5d2991e63f07cda600249b8b))
+
 ## [1.4.0](https://github.com/morganBlanloeil/c9e/compare/v1.3.1...v1.4.0) (2026-03-26)
 
 
