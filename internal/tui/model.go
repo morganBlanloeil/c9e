@@ -13,11 +13,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/wescale/claude-dashboard/internal/display"
-	"github.com/wescale/claude-dashboard/internal/logs"
-	"github.com/wescale/claude-dashboard/internal/notify"
-	"github.com/wescale/claude-dashboard/internal/process"
-	"github.com/wescale/claude-dashboard/internal/terminal"
+	"github.com/morganBlanloeil/c9e/internal/display"
+	"github.com/morganBlanloeil/c9e/internal/logs"
+	"github.com/morganBlanloeil/c9e/internal/notify"
+	"github.com/morganBlanloeil/c9e/internal/process"
+	"github.com/morganBlanloeil/c9e/internal/terminal"
 )
 
 // SortColumn identifies which column to sort by.

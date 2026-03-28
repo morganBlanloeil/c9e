@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/wescale/claude-dashboard/internal/cost"
-	"github.com/wescale/claude-dashboard/internal/display"
-	"github.com/wescale/claude-dashboard/internal/history"
-	"github.com/wescale/claude-dashboard/internal/logs"
-	"github.com/wescale/claude-dashboard/internal/process"
-	"github.com/wescale/claude-dashboard/internal/session"
+	"github.com/morganBlanloeil/c9e/internal/cost"
+	"github.com/morganBlanloeil/c9e/internal/display"
+	"github.com/morganBlanloeil/c9e/internal/history"
+	"github.com/morganBlanloeil/c9e/internal/logs"
+	"github.com/morganBlanloeil/c9e/internal/process"
+	"github.com/morganBlanloeil/c9e/internal/session"
 )
 
 // resolveHomeDir returns the effective home directory for data loading.

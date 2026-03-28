@@ -2,9 +2,10 @@
 
 A terminal dashboard for monitoring running Claude Code instances — like [k9s](https://k9scli.io/) but for Claude Code.
 
+![CI](https://img.shields.io/github/actions/workflow/status/morganBlanloeil/c9e/ci.yml?branch=main&label=CI)
 ![Version](https://img.shields.io/github/v/release/morganBlanloeil/c9e?label=version)
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-blue)
+![License](https://img.shields.io/github/license/morganBlanloeil/c9e)
 
 ## Features
 
